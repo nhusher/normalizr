@@ -1,13 +1,14 @@
 # API
 
 - [normalize](#normalizedata-schema)
-- [denormalize](#denormalizeinput-schema-entities)
+- [denormalize](#denormalizeinput-schema-entities-options)
 - [schema](#schema)
   - [Array](#arraydefinition-schemaattribute)
   - [Entity](#entitykey-definition---options--)
   - [Object](#objectdefinition)
   - [Union](#uniondefinition-schemaattribute)
   - [Values](#valuesdefinition-schemaattribute)
+- [Type Utilities](#type-utilities)
 
 ## `normalize(data, schema)`
 
@@ -18,7 +19,7 @@ Normalizes input data per the schema definition provided.
 
 ### Usage
 
-```js
+```ts
 import { normalize, schema } from 'normalizr';
 
 const myData = { users: [{ id: 1 }, { id: 2 }] };
@@ -41,21 +42,23 @@ const normalizedData = normalize(myData, mySchema);
 }
 ```
 
-## `denormalize(input, schema, entities)`
+## `denormalize(input, schema, entities, options?)`
 
 Denormalizes an input based on schema and provided entities from a plain object or Immutable data. The reverse of `normalize`.
 
 _Special Note:_ Be careful with denormalization. Prematurely reverting your data to large, nested objects could cause performance impacts in React (and other) applications.
 
-If your schema and data have recursive references, only the first instance of an entity will be given. Subsequent references will be returned as the `id` provided.
+If your schema and data have recursive references, only the first instance of an entity will be given. Subsequent references will be returned as the same object reference (enabling referential equality checks).
 
 - `input`: **required** The normalized result that should be _de-normalized_. Usually the same value that was given in the `result` key of the output of `normalize`.
 - `schema`: **required** A schema definition that was used to get the value for `input`.
 - `entities`: **required** An object, keyed by entity schema names that may appear in the denormalized output. Also accepts an object with Immutable data.
+- `options`: _optional_ Configuration options
+  - `createUnvisit`: A factory function to create a custom unvisit function for lazy denormalization (advanced usage).
 
 ### Usage
 
-```js
+```ts
 import { denormalize, schema } from 'normalizr';
 
 const user = new schema.Entity('users');
@@ -72,6 +75,21 @@ const denormalizedData = denormalize({ users: [1, 2] }, mySchema, entities);
 }
 ```
 
+### Immutable.js Support
+
+Denormalize works with Immutable.js data structures:
+
+```ts
+import { fromJS } from 'immutable';
+
+const entities = fromJS({
+  users: { '1': { id: 1 }, '2': { id: 2 } },
+});
+const result = denormalize({ users: [1, 2] }, mySchema, entities);
+```
+
+**Note:** Circular references are not supported with Immutable.js entities and will throw an error.
+
 ## `schema`
 
 ### `Array(definition, schemaAttribute)`
@@ -81,10 +99,11 @@ Creates a schema to normalize an array of schemas. If the input value is an `Obj
 _Note: The same behavior can be defined with shorthand syntax: `[ mySchema ]`_
 
 - `definition`: **required** A singular schema that this array contains _or_ a mapping of schema to attribute values.
-- `schemaAttribute`: _optional_ (required if `definition` is not a singular schema) The attribute on each entity found that defines what schema, per the definition mapping, to use when normalizing.  
-  Can be a string or a function. If given a function, accepts the following arguments:  
-   _ `value`: The input value of the entity.
-  _ `parent`: The parent object of the input array. \* `key`: The key at which the input array appears on the parent object.
+- `schemaAttribute`: _optional_ (required if `definition` is not a singular schema) The attribute on each entity found that defines what schema, per the definition mapping, to use when normalizing.
+  Can be a string or a function. If given a function, accepts the following arguments:
+  - `value`: The input value of the entity.
+  - `parent`: The parent object of the input array.
+  - `key`: The key at which the input array appears on the parent object.
 
 #### Instance Methods
 
@@ -94,8 +113,11 @@ _Note: The same behavior can be defined with shorthand syntax: `[ mySchema ]`_
 
 To describe a simple array of a singular entity type:
 
-```js
-const data = [{ id: '123', name: 'Jim' }, { id: '456', name: 'Jane' }];
+```ts
+const data = [
+  { id: '123', name: 'Jim' },
+  { id: '456', name: 'Jane' },
+];
 const userSchema = new schema.Entity('users');
 
 const userListSchema = new schema.Array(userSchema);
@@ -125,17 +147,20 @@ _Note: If your data returns an object that you did not provide a mapping for, th
 
 For example:
 
-```js
-const data = [{ id: 1, type: 'admin' }, { id: 2, type: 'user' }];
+```ts
+const data = [
+  { id: 1, type: 'admin' },
+  { id: 2, type: 'user' },
+];
 
 const userSchema = new schema.Entity('users');
 const adminSchema = new schema.Entity('admins');
 const myArray = new schema.Array(
   {
     admins: adminSchema,
-    users: userSchema
+    users: userSchema,
   },
-  (input, parent, key) => `${input.type}s`
+  (input, parent, key) => `${input.type}s`,
 );
 
 const normalizedData = normalize(data, myArray);
@@ -159,18 +184,18 @@ const normalizedData = normalize(data, myArray);
 ### `Entity(key, definition = {}, options = {})`
 
 - `key`: **required** The key name under which all entities of this type will be listed in the normalized response. Must be a string name.
-- `definition`: A definition of the nested entities found within this entity. Defaults to empty object.  
+- `definition`: A definition of the nested entities found within this entity. Defaults to empty object.
   You _do not_ need to define any keys in your entity other than those that hold nested entities. All other values will be copied to the normalized entity's output.
 - `options`:
-  - `idAttribute`: The attribute where unique IDs for each of this entity type can be found.  
-    Accepts either a string `key` or a function that returns the IDs `value`. Defaults to `'id'`. This function can and will be run multiple times – which means your generated ID _must_ be the same every time the function is run. Using a random number/string generator like `uuid` will cause unexpected errors.
+  - `idAttribute`: The attribute where unique IDs for each of this entity type can be found.
+    Accepts either a string `key` or a function that returns the IDs `value`. Defaults to `'id'`. This function can and will be run multiple times – which means your generated ID _must_ be the same every time the function is run. Using a random number/string generator like `uuid` will cause unexpected errors.
     As a function, accepts the following arguments, in order:
     - `value`: The input value of the entity.
     - `parent`: The parent object of the input array.
     - `key`: The key at which the input array appears on the parent object.
   - `mergeStrategy(entityA, entityB)`: Strategy to use when merging two entities with the same `id` value. Defaults to merge the more recently found entity onto the previous.
-  - `processStrategy(value, parent, key)`: Strategy to use when pre-processing the entity. Use this method to add extra data, defaults, and/or completely change the entity before normalization is complete. Defaults to returning a shallow copy of the input entity.  
-    _Note: It is recommended to always return a copy of your input and not modify the original._  
+  - `processStrategy(value, parent, key)`: Strategy to use when pre-processing the entity. Use this method to add extra data, defaults, and/or completely change the entity before normalization is complete. Defaults to returning a shallow copy of the input entity.
+    _Note: It is recommended to always return a copy of your input and not modify the original._
     The function accepts the following arguments, in order:
     - `value`: The input value of the entity.
     - `parent`: The parent object of the input array.
@@ -182,6 +207,7 @@ const normalizedData = normalize(data, myArray);
 #### Instance Methods
 
 - `define(definition)`: When used, the `definition` passed in will be merged with the original definition passed to the `Entity` constructor. This method tends to be useful for creating circular references in schema.
+- `validate(input)`: Validates that the input is suitable for normalization. Override this method to implement custom validation. Throws an error if validation fails.
 
 #### Instance Attributes
 
@@ -190,8 +216,12 @@ const normalizedData = normalize(data, myArray);
 
 #### Usage
 
-```js
-const data = { id_str: '123', url: 'https://twitter.com', user: { id_str: '456', name: 'Jimmy' } };
+```ts
+const data = {
+  id_str: '123',
+  url: 'https://twitter.com',
+  user: { id_str: '456', name: 'Jimmy' },
+};
 
 const user = new schema.Entity('users', {}, { idAttribute: 'id_str' });
 const tweet = new schema.Entity(
@@ -203,11 +233,14 @@ const tweet = new schema.Entity(
     mergeStrategy: (entityA, entityB) => ({
       ...entityA,
       ...entityB,
-      favorites: entityA.favorites
+      favorites: entityA.favorites,
     }),
     // Remove the URL field from the entity
-    processStrategy: (entity) => omit(entity, 'url')
-  }
+    processStrategy: (entity) => {
+      const { url, ...rest } = entity;
+      return rest;
+    },
+  },
 );
 
 const normalizedData = normalize(data, tweet);
@@ -231,12 +264,15 @@ When passing the `idAttribute` a function, it should return the IDs value.
 
 For Example:
 
-```js
-const data = [{ id: '1', guest_id: null, name: 'Esther' }, { id: '1', guest_id: '22', name: 'Tom' }];
+```ts
+const data = [
+  { id: '1', guest_id: null, name: 'Esther' },
+  { id: '1', guest_id: '22', name: 'Tom' },
+];
 
 const patronsSchema = new schema.Entity('patrons', undefined, {
   // idAttribute *functions* must return the ids **value** (not key)
-  idAttribute: (value) => (value.guest_id ? `${value.id}-${value.guest_id}` : value.id)
+  idAttribute: (value) => (value.guest_id ? `${value.id}-${value.guest_id}` : value.id),
 });
 
 normalize(data, [patronsSchema]);
@@ -257,65 +293,68 @@ normalize(data, [patronsSchema]);
 ```
 
 #### `fallbackStrategy` Usage
-```js
+
+```ts
 const users = {
-  '1': { id: '1', name: "Emily", requestState: 'SUCCEEDED' },
-  '2': { id: '2', name: "Douglas", requestState: 'SUCCEEDED' }
+  '1': { id: '1', name: 'Emily', requestState: 'SUCCEEDED' },
+  '2': { id: '2', name: 'Douglas', requestState: 'SUCCEEDED' },
 };
 const books = {
-  '1': {id: '1', name: "Book 1", author: 1 },
-  '2': {id: '2', name: "Book 2", author: 2 },
-  '3': {id: '3', name: "Book 3", author: 3 }
+  '1': { id: '1', name: 'Book 1', author: 1 },
+  '2': { id: '2', name: 'Book 2', author: 2 },
+  '3': { id: '3', name: 'Book 3', author: 3 },
 };
 
-const authorSchema = new schema.Entity('authors', {}, {
-  fallbackStrategy: (key, schema) => {
-    return {
-      [schema.idAttribute]: key,
-      name: 'Unknown',
-      requestState: 'NONE'
-    };
-  }
-});
+const authorSchema = new schema.Entity(
+  'authors',
+  {},
+  {
+    fallbackStrategy: (key, schema) => {
+      return {
+        [schema.idAttribute as string]: key,
+        name: 'Unknown',
+        requestState: 'NONE',
+      };
+    },
+  },
+);
 const bookSchema = new schema.Entity('books', {
-  author: authorSchema
+  author: authorSchema,
 });
 
 denormalize([1, 2, 3], [bookSchema], {
   books,
-  authors: users
-})
-
+  authors: users,
+});
 ```
 
-
 #### Output
+
 ```js
 [
   {
-    id: '1', 
-    name: "Book 1", 
-    author: { id: '1', name: "Emily", requestState: 'SUCCEEDED' }
+    id: '1',
+    name: 'Book 1',
+    author: { id: '1', name: 'Emily', requestState: 'SUCCEEDED' },
   },
   {
-    id: '2', 
-    name: "Book 2", 
-    author: { id: '2', name: "Douglas", requestState: 'SUCCEEDED' },
+    id: '2',
+    name: 'Book 2',
+    author: { id: '2', name: 'Douglas', requestState: 'SUCCEEDED' },
   },
   {
-    id: '3', 
-    name: "Book 3", 
-    author: { id: '3', name: "Unknown", requestState: 'NONE' },
-  }
-]
-
+    id: '3',
+    name: 'Book 3',
+    author: { id: '3', name: 'Unknown', requestState: 'NONE' },
+  },
+];
 ```
 
 ### `Object(definition)`
 
 Define a plain object mapping that has values needing to be normalized into Entities. _Note: The same behavior can be defined with shorthand syntax: `{ ... }`_
 
-- `definition`: **required** A definition of the nested entities found within this object. Defaults to empty object.  
+- `definition`: **required** A definition of the nested entities found within this object. Defaults to empty object.
   You _do not_ need to define any keys in your object other than those that hold other entities. All other values will be copied to the normalized output.
 
 #### Instance Methods
@@ -324,7 +363,7 @@ Define a plain object mapping that has values needing to be normalized into Enti
 
 #### Usage
 
-```js
+```ts
 // Example data response
 const data = { users: [{ id: '123', name: 'Beth' }] };
 
@@ -352,7 +391,7 @@ const normalizedData = normalize(data, responseSchema);
 Describe a schema which is a union of multiple schemas. This is useful if you need the polymorphic behavior provided by `schema.Array` or `schema.Values` but for non-collection fields.
 
 - `definition`: **required** An object mapping the definition of the nested entities found within the input array
-- `schemaAttribute`: **required** The attribute on each entity found that defines what schema, per the definition mapping, to use when normalizing.  
+- `schemaAttribute`: **required** The attribute on each entity found that defines what schema, per the definition mapping, to use when normalizing.
   Can be a string or a function. If given a function, accepts the following arguments:
   - `value`: The input value of the entity.
   - `parent`: The parent object of the input array.
@@ -366,7 +405,7 @@ Describe a schema which is a union of multiple schemas. This is useful if you ne
 
 _Note: If your data returns an object that you did not provide a mapping for, the original object will be returned in the result and an entity will not be created._
 
-```js
+```ts
 const data = { owner: { id: 1, type: 'user', name: 'Anne' } };
 
 const user = new schema.Entity('users');
@@ -374,9 +413,9 @@ const group = new schema.Entity('groups');
 const unionSchema = new schema.Union(
   {
     user: user,
-    group: group
+    group: group,
   },
-  'type'
+  'type',
 );
 
 const normalizedData = normalize(data, { owner: unionSchema });
@@ -398,7 +437,7 @@ const normalizedData = normalize(data, { owner: unionSchema });
 Describes a map whose values follow the given schema.
 
 - `definition`: **required** A singular schema that this array contains _or_ a mapping of schema to attribute values.
-- `schemaAttribute`: _optional_ (required if `definition` is not a singular schema) The attribute on each entity found that defines what schema, per the definition mapping, to use when normalizing.  
+- `schemaAttribute`: _optional_ (required if `definition` is not a singular schema) The attribute on each entity found that defines what schema, per the definition mapping, to use when normalizing.
   Can be a string or a function. If given a function, accepts the following arguments:
   - `value`: The input value of the entity.
   - `parent`: The parent object of the input array.
@@ -410,7 +449,7 @@ Describes a map whose values follow the given schema.
 
 #### Usage
 
-```js
+```ts
 const data = { firstThing: { id: 1 }, secondThing: { id: 2 } };
 
 const item = new schema.Entity('items');
@@ -436,10 +475,10 @@ _Note: If your data returns an object that you did not provide a mapping for, th
 
 For example:
 
-```js
+```ts
 const data = {
   '1': { id: 1, type: 'admin' },
-  '2': { id: 2, type: 'user' }
+  '2': { id: 2, type: 'user' },
 };
 
 const userSchema = new schema.Entity('users');
@@ -447,9 +486,9 @@ const adminSchema = new schema.Entity('admins');
 const valuesSchema = new schema.Values(
   {
     admins: adminSchema,
-    users: userSchema
+    users: userSchema,
   },
-  (input, parent, key) => `${input.type}s`
+  (input, parent, key) => `${input.type}s`,
 );
 
 const normalizedData = normalize(data, valuesSchema);
@@ -468,4 +507,146 @@ const normalizedData = normalize(data, valuesSchema);
     '2': { id: 2, schema: 'users' }
   }
 }
+```
+
+## Type Utilities
+
+Normalizr exports several TypeScript utility types for working with normalized data.
+
+### Explicit Type Parameters
+
+For the best type inference, provide explicit type parameters when creating schemas:
+
+```ts
+import { schema, Denormalized, EntitiesOf } from 'normalizr';
+
+// Define your data types
+interface User {
+  id: string;
+  name: string;
+}
+
+interface Article {
+  id: string;
+  title: string;
+  author: User;
+}
+
+// Create schemas with type parameters: Entity<Key, DataType>
+const userSchema = new schema.Entity<'users', User>('users');
+const articleSchema = new schema.Entity<'articles', Article>('articles', {
+  author: userSchema,
+});
+
+// Now type utilities work with full type information
+type DenormalizedArticle = Denormalized<typeof articleSchema>;
+// Article (i.e., { id: string; title: string; author: User })
+
+type Entities = EntitiesOf<typeof articleSchema>;
+// { users: Record<string, User>; articles: Record<string, Article> }
+```
+
+### `Denormalized<S>`
+
+Extract the denormalized (nested) type from a schema:
+
+```ts
+import { schema, Denormalized } from 'normalizr';
+
+// Without explicit types (inferred as generic)
+const userSchema = new schema.Entity('users');
+const articleSchema = new schema.Entity('articles', { author: userSchema });
+
+type Article = Denormalized<typeof articleSchema>;
+// { id: string; author: { id: string; ... }; ... }
+
+// With explicit types (fully typed)
+interface User {
+  id: string;
+  name: string;
+}
+
+const typedUserSchema = new schema.Entity<'users', User>('users');
+
+type TypedUser = Denormalized<typeof typedUserSchema>;
+// User (i.e., { id: string; name: string })
+```
+
+### `Normalized<S>`
+
+Extract the normalized (flat) type from a schema. For entities, this is the ID type (string):
+
+```ts
+import { schema, Normalized } from 'normalizr';
+
+const userSchema = new schema.Entity('users');
+
+type NormalizedUser = Normalized<typeof userSchema>;
+// string (the entity ID)
+
+// For arrays
+type NormalizedUsers = Normalized<[typeof userSchema]>;
+// string[] (array of entity IDs)
+```
+
+### `EntitiesOf<S>`
+
+Extract the entities map type from a schema:
+
+```ts
+import { schema, EntitiesOf } from 'normalizr';
+
+interface User {
+  id: string;
+  name: string;
+}
+
+interface Article {
+  id: string;
+  author: User;
+}
+
+const userSchema = new schema.Entity<'users', User>('users');
+const articleSchema = new schema.Entity<'articles', Article>('articles', {
+  author: userSchema,
+});
+
+type Entities = EntitiesOf<typeof articleSchema>;
+// { users: Record<string, User>; articles: Record<string, Article> }
+```
+
+### `InferredEntity<TDefinition>`
+
+Infer an entity type from a schema definition. Useful when you want to derive types from the schema rather than defining them upfront:
+
+```ts
+import { schema, InferredEntity } from 'normalizr';
+
+const commentSchema = new schema.Entity('comments');
+const userSchema = new schema.Entity('users');
+
+const articleSchema = new schema.Entity('articles', {
+  author: userSchema,
+  comments: [commentSchema],
+});
+
+type Article = InferredEntity<typeof articleSchema.schema>;
+// { id: string; author?: User; comments?: Comment[] } & Record<string, unknown>
+```
+
+### `NormalizedEntity<TDefinition>`
+
+Get the normalized version of an entity (where nested entity references become IDs):
+
+```ts
+import { schema, NormalizedEntity } from 'normalizr';
+
+const userSchema = new schema.Entity('users');
+const articleSchema = new schema.Entity('articles', {
+  author: userSchema,
+  comments: [new schema.Entity('comments')],
+});
+
+type NormalizedArticle = NormalizedEntity<typeof articleSchema.schema>;
+// { id: string; author?: string; comments?: string[] } & Record<string, unknown>
 ```

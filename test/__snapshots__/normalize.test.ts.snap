@@ -1,0 +1,296 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`denormalize > denormalizes entities 1`] = `
+[
+  {
+    "id": 1,
+    "type": "foo",
+  },
+  {
+    "id": 2,
+    "type": "bar",
+  },
+]
+`;
+
+exports[`denormalize > denormalizes nested entities 1`] = `
+{
+  "author": {
+    "id": "8472",
+    "name": "Paul",
+  },
+  "body": "This article is great.",
+  "comments": [
+    {
+      "comment": "I like it!",
+      "id": "comment-123-4738",
+      "user": {
+        "id": "10293",
+        "name": "Jane",
+      },
+    },
+  ],
+  "id": "123",
+  "title": "A Great Article",
+}
+`;
+
+exports[`denormalize > denormalizes with function as idAttribute 1`] = `
+[
+  {
+    "guest": null,
+    "id": "1",
+    "name": "Esther",
+  },
+  {
+    "guest": {
+      "guest_id": 1,
+    },
+    "id": "2",
+    "name": "Tom",
+  },
+]
+`;
+
+exports[`denormalize > set to undefined if schema key is not in entities 1`] = `
+{
+  "author": undefined,
+  "comments": [
+    {
+      "user": undefined,
+    },
+  ],
+  "id": "123",
+}
+`;
+
+exports[`normalize > can normalize entity nested inside entity using property from parent 1`] = `
+{
+  "entities": {
+    "linkables": {
+      "1": {
+        "data": 2,
+        "id": 1,
+        "module_type": "article",
+        "schema_type": "media",
+      },
+    },
+    "media": {
+      "2": {
+        "id": 2,
+        "url": "catimage.jpg",
+      },
+    },
+  },
+  "result": 1,
+}
+`;
+
+exports[`normalize > can normalize entity nested inside object using property from parent 1`] = `
+{
+  "entities": {
+    "media": {
+      "2": {
+        "id": 2,
+        "url": "catimage.jpg",
+      },
+    },
+  },
+  "result": {
+    "data": 2,
+    "id": 1,
+    "module_type": "article",
+    "schema_type": "media",
+  },
+}
+`;
+
+exports[`normalize > can use fully custom entity classes 1`] = `
+{
+  "entities": {
+    "children": {
+      "4": {
+        "id": 4,
+        "name": "lettuce",
+      },
+    },
+    "food": {
+      "1234": {
+        "children": [
+          4,
+        ],
+        "name": "tacos",
+        "uuid": "1234",
+      },
+    },
+  },
+  "result": {
+    "schema": "food",
+    "uuid": "1234",
+  },
+}
+`;
+
+exports[`normalize > ignores null values 1`] = `
+{
+  "entities": {},
+  "result": [
+    null,
+  ],
+}
+`;
+
+exports[`normalize > ignores null values 2`] = `
+{
+  "entities": {},
+  "result": [
+    undefined,
+  ],
+}
+`;
+
+exports[`normalize > ignores null values 3`] = `
+{
+  "entities": {},
+  "result": [
+    false,
+  ],
+}
+`;
+
+exports[`normalize > normalizes entities 1`] = `
+{
+  "entities": {
+    "tacos": {
+      "1": {
+        "id": 1,
+        "type": "foo",
+      },
+      "2": {
+        "id": 2,
+        "type": "bar",
+      },
+    },
+  },
+  "result": [
+    1,
+    2,
+  ],
+}
+`;
+
+exports[`normalize > normalizes entities with circular references 1`] = `
+{
+  "entities": {
+    "users": {
+      "123": {
+        "friends": [
+          123,
+        ],
+        "id": 123,
+      },
+    },
+  },
+  "result": 123,
+}
+`;
+
+exports[`normalize > normalizes nested entities 1`] = `
+{
+  "entities": {
+    "articles": {
+      "123": {
+        "author": "8472",
+        "body": "This article is great.",
+        "comments": [
+          "comment-123-4738",
+        ],
+        "id": "123",
+        "title": "A Great Article",
+      },
+    },
+    "comments": {
+      "comment-123-4738": {
+        "comment": "I like it!",
+        "id": "comment-123-4738",
+        "user": "10293",
+      },
+    },
+    "users": {
+      "10293": {
+        "id": "10293",
+        "name": "Jane",
+      },
+      "8472": {
+        "id": "8472",
+        "name": "Paul",
+      },
+    },
+  },
+  "result": "123",
+}
+`;
+
+exports[`normalize > passes over pre-normalized values 1`] = `
+{
+  "entities": {
+    "articles": {
+      "123": {
+        "author": 1,
+        "id": "123",
+        "title": "normalizr is great!",
+      },
+    },
+  },
+  "result": "123",
+}
+`;
+
+exports[`normalize > uses the non-normalized input when getting the ID for an entity 1`] = `
+{
+  "entities": {
+    "recommendations": {
+      "456": {
+        "user": "456",
+      },
+    },
+    "users": {
+      "456": {
+        "id": "456",
+      },
+    },
+  },
+  "result": "456",
+}
+`;
+
+exports[`normalize > uses the non-normalized input when getting the ID for an entity 2`] = `
+[
+  [
+    {
+      "user": {
+        "id": "456",
+      },
+    },
+    {
+      "user": {
+        "id": "456",
+      },
+    },
+    undefined,
+  ],
+  [
+    {
+      "user": {
+        "id": "456",
+      },
+    },
+    {
+      "user": {
+        "id": "456",
+      },
+    },
+    undefined,
+  ],
+]
+`;
