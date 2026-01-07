@@ -363,4 +363,37 @@ describe('denormalize', () => {
 
     expect(denormalize(normalizedData.result, [patronsSchema], normalizedData.entities)).toMatchSnapshot();
   });
+
+  test('denormalizes circular data with referential equality', () => {
+    const user = new schema.Entity('users');
+    user.define({
+      friends: [user],
+    });
+
+    // Create circular input data: user is their own friend
+    const input: { id: number; name: string; friends: unknown[] } = {
+      id: 123,
+      name: 'Alice',
+      friends: [],
+    };
+    input.friends.push(input);
+
+    // Normalize the circular data
+    const { result, entities } = normalize(input, user);
+
+    // Denormalize back
+    const output = denormalize(result, user, entities) as {
+      id: number;
+      name: string;
+      friends: unknown[];
+    };
+
+    // Verify the denormalized structure
+    expect(output.id).toBe(123);
+    expect(output.name).toBe('Alice');
+    expect(output.friends).toHaveLength(1);
+
+    // Verify referential equality: the user should be the same object as their friend
+    expect(output).toBe(output.friends[0]);
+  });
 });

@@ -54,7 +54,7 @@ If your schema and data have recursive references, only the first instance of an
 - `schema`: **required** A schema definition that was used to get the value for `input`.
 - `entities`: **required** An object, keyed by entity schema names that may appear in the denormalized output. Also accepts an object with Immutable data.
 - `options`: _optional_ Configuration options
-  - `createUnvisit`: A factory function to create a custom unvisit function for lazy denormalization (advanced usage).
+  - `createUnvisit`: A factory function to create a custom unvisit function (advanced usage).
 
 ### Usage
 

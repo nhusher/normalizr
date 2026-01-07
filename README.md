@@ -87,17 +87,38 @@ Now, `normalizedData` will be:
 }
 ```
 
-## Documentation
+## Denormalization
 
-- [Introduction](./docs/introduction.md)
-- [Quick Start](./docs/quickstart.md)
-- [API Reference](./docs/api.md)
-  - [normalize](./docs/api.md#normalizedata-schema)
-  - [denormalize](./docs/api.md#denormalizeinput-schema-entities-options)
-  - [schema](./docs/api.md#schema)
-  - [Type Utilities](./docs/api.md#type-utilities)
-- [FAQs](./docs/faqs.md)
-- [Using with JSONAPI](./docs/jsonapi.md)
+To convert normalized data back to its nested form, use `denormalize`:
+
+```ts
+import { denormalize } from 'normalizr';
+
+const denormalizedArticle = denormalize('123', article, normalizedData.entities);
+// Returns the original nested structure
+```
+
+## Circular References
+
+Normalizr handles circular references in both schemas and data. When denormalizing, circular references maintain referential equality—the same object instance is returned for the same entity.
+
+```ts
+import { normalize, denormalize, schema } from 'normalizr';
+
+const user = new schema.Entity('users');
+user.define({ friends: [user] });
+
+// Circular data: user references themselves
+const input = { id: '1', name: 'Alice', friends: [] as unknown[] };
+input.friends.push(input);
+
+const { result, entities } = normalize(input, user);
+// entities.users['1'] = { id: '1', name: 'Alice', friends: ['1'] }
+
+const output = denormalize(result, user, entities) as { friends: unknown[] };
+// Referential equality is preserved:
+output === output.friends[0]; // true
+```
 
 ## TypeScript
 
@@ -116,6 +137,25 @@ const userSchema = new schema.Entity<'users', User>('users');
 type Entities = EntitiesOf<typeof userSchema>;
 // { users: Record<string, User> }
 ```
+
+## Build Files
+
+Normalizr ships with two module formats:
+
+- **ESM** (`dist/normalizr.js`) - ES Modules format, suitable for modern bundlers like Vite, webpack, Rollup, or esbuild. This is the default when using `import`.
+- **CommonJS** (`dist/normalizr.cjs`) - CommonJS format for Node.js and older bundlers. This is the default when using `require()`.
+
+TypeScript declaration files (`dist/index.d.ts`) are included for full type support.
+
+## Documentation
+
+- [API Reference](./docs/api.md)
+  - [normalize](./docs/api.md#normalizedata-schema)
+  - [denormalize](./docs/api.md#denormalizeinput-schema-entities-options)
+  - [schema](./docs/api.md#schema)
+  - [Type Utilities](./docs/api.md#type-utilities)
+- [FAQs](./docs/faqs.md)
+- [Using with JSONAPI](./docs/jsonapi.md)
 
 ## Examples
 
