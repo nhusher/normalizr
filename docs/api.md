@@ -350,6 +350,58 @@ denormalize([1, 2, 3], [bookSchema], {
 ];
 ```
 
+#### Dynamic Schema Functions
+
+Instead of a static schema, you can use a function that returns a schema based on the parent entity's data. This is useful when the nested entity type depends on a field in the parent.
+
+The function receives the parent entity and should return the appropriate schema:
+
+```ts
+const mediaSchema = new schema.Entity('media');
+const articleSchema = new schema.Entity('articles');
+
+const feedItemSchema = new schema.Entity('feedItems', {
+  // Choose schema based on the parent's 'contentType' field
+  content: (parent) => {
+    switch (parent.contentType) {
+      case 'media':
+        return mediaSchema;
+      case 'article':
+        return articleSchema;
+      default:
+        return undefined; // Skip normalization for unknown types
+    }
+  },
+});
+
+const data = [
+  { id: '1', contentType: 'media', content: { id: 'm1', url: 'photo.jpg' } },
+  { id: '2', contentType: 'article', content: { id: 'a1', title: 'Hello World' } },
+];
+
+normalize(data, [feedItemSchema]);
+```
+
+#### Output
+
+```js
+{
+  entities: {
+    feedItems: {
+      '1': { id: '1', contentType: 'media', content: 'm1' },
+      '2': { id: '2', contentType: 'article', content: 'a1' },
+    },
+    media: {
+      'm1': { id: 'm1', url: 'photo.jpg' },
+    },
+    articles: {
+      'a1': { id: 'a1', title: 'Hello World' },
+    },
+  },
+  result: ['1', '2']
+}
+```
+
 ### `Object(definition)`
 
 Define a plain object mapping that has values needing to be normalized into Entities. _Note: The same behavior can be defined with shorthand syntax: `{ ... }`_

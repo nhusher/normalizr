@@ -1,11 +1,5 @@
 # Frequently Asked Questions
 
-## Getting Help
-
-If you are having trouble with Normalizr, try [StackOverflow](http://stackoverflow.com/questions/tagged/normalizr). There is a larger community there that will help you solve issues faster than opening an Issue on GitHub.
-
-## Common Questions
-
 ### How do I handle circular references?
 
 Normalizr handles circular references automatically. When defining schemas with circular references, use the `define()` method:
@@ -68,14 +62,4 @@ Note that circular references are not supported with Immutable.js.
 
 ### How do I normalize data with dynamic schemas?
 
-Use a function for the schema definition:
-
-```ts
-const media = new schema.Entity('media');
-const article = new schema.Entity('articles');
-
-const linkable = new schema.Entity('linkables', {
-  // Dynamic schema based on parent's type field
-  content: (parent) => (parent.type === 'media' ? media : article),
-});
-```
+Use a function instead of a schema in your entity definition. The function receives the parent entity and returns the appropriate schema based on its data. See the [Dynamic Schema Functions](./api.md#dynamic-schema-functions) section in the API reference for a complete example.
