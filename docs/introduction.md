@@ -19,17 +19,17 @@ The following nested object:
     title: 'Some Article',
     author: {
       id: 1,
-      name: 'Dan'
-    }
+      name: 'Dan',
+    },
   },
   {
     id: 2,
     title: 'Other Article',
     author: {
       id: 1,
-      name: 'Dan'
-    }
-  }
+      name: 'Dan',
+    },
+  },
 ];
 ```
 
@@ -63,16 +63,25 @@ Can be normalized to:
 
 ## Build Files
 
-Normalizr is built for various environments
+Normalizr ships with two module formats:
 
-- `src/*`
-  - CommonJS, unpacked files. These are the recommended files for use with your own package bundler and are the default in-point as defined by this modules `package.json`.
-- `normalizr.js`, `normalizr.min.js`
-  - [CommonJS](http://davidbcalhoun.com/2014/what-is-amd-commonjs-and-umd/)
-- `normalizr.amd.js`, `normalizr.amd.min.js`
-  - [Asynchronous Module Definition](http://davidbcalhoun.com/2014/what-is-amd-commonjs-and-umd/)
-- `normalizr.umd.js`, `normalizr.umn.min.js`
-  - [Universal Module Definition](http://davidbcalhoun.com/2014/what-is-amd-commonjs-and-umd/)
-- `normalizr.browser.js`, `normalizr.browser.min.js`
-  - [IIFE](http://benalman.com/news/2010/11/immediately-invoked-function-expression/) / Immediately-Invoked Function Expression, suitable for use as a standalone script import in the browser.
-  - Note: It is not recommended to use packages like Normalizr with direct browser `<script src="normalizr.js"></script>` tags. Consider a package bundler like [webpack](https://webpack.github.io/), [rollup](https://rollupjs.org/), or [browserify](http://browserify.org/) instead.
+- **ESM** (`dist/normalizr.js`) - ES Modules format, suitable for modern bundlers like Vite, webpack, Rollup, or esbuild. This is the default when using `import`.
+- **CommonJS** (`dist/normalizr.cjs`) - CommonJS format for Node.js and older bundlers. This is the default when using `require()`.
+
+TypeScript declaration files (`dist/index.d.ts`) are included for full type support.
+
+### Package Exports
+
+The `package.json` uses the `exports` field to automatically provide the correct format:
+
+```js
+// ESM (recommended)
+import { normalize, schema } from 'normalizr';
+
+// CommonJS
+const { normalize, schema } = require('normalizr');
+```
+
+### Browser Usage
+
+While you can technically load Normalizr directly in a browser via a CDN, it's recommended to use a bundler like [Vite](https://vitejs.dev/), [webpack](https://webpack.js.org/), or [esbuild](https://esbuild.github.io/) for production applications.

@@ -1,71 +1,34 @@
-# v3.6.1
+# Changelog
 
-- **Fixed** Add types for fallback strategy
-- **Chore** Upgraded development dependencies
+## v4.0.0
 
-# v3.6.0
+Complete TypeScript rewrite with improved type inference and modern tooling.
 
-- **Added** `fallbackStrategy` for denormalization (#422)
-- **Fixed** entities can be `undefined` in TS defs if none found (#435)
+### Breaking Changes
 
-# v3.5.0
+- **TypeScript rewrite**: The entire library has been rewritten in TypeScript. While the API remains backward compatible, some edge cases may behave differently.
+- **IdType is now `string`**: Entity IDs are always strings in the normalized store (JavaScript coerces object keys to strings). If your code relied on numeric IDs in the entities store, you may need to update it.
+- **Immutable.js circular references**: Circular references with Immutable.js data structures now throw an error instead of silently producing incorrect results.
 
-- **Added** ability to dynamically set nested schema type (#415)
-- **Changed** Enable loose transformation for object spread operator to improve performance (#431)
-- **Fixed** don't use schema to attribute mapping on singular array schemas (#387)
-- **Fixed** When normalize() receives null input, don't say it is an object (#411)
-- **Fixed** Improve performance of circular reference detection (#420)
+### Added
 
-# v3.4.0
+- **Full TypeScript support**: All source code is now TypeScript with comprehensive type definitions.
+- **Type inference utilities**: New `Denormalized<S>`, `Normalized<S>`, and `EntitiesOf<S>` types for inferring types from schemas.
+- **`validate()` method on Entity**: Override to implement custom input validation during normalization.
+- **Lazy denormalization hook**: The `denormalize()` function now accepts a `createUnvisit` option for implementing custom lazy/proxy-based denormalization.
+- **Better error messages**: More descriptive errors for invalid inputs and circular reference issues.
 
-- **Changed** Now built with Babel 7
-- **Added** Support for circular references (gh-335)
-- **Added** Symbols are valid keys for Entity keys (gh-369)
-- **Added/Changed** Typescript definitions include generics for `normalize` (gh-363)
-- **Fixed** denormalization skipping of falsy valued ids used in `Object` schemas (gh-345)
-- **Chore** Update dev dependencies
-- **Chore** Added Greenkeeper
+### Changed
 
-# v3.3.0
+- **Build system**: Migrated from Rollup to Vite for faster builds and better ESM support.
+- **Test runner**: Migrated from Jest to Vitest.
+- **Module format**: Now ships as ES modules with CommonJS fallback.
 
-- **Added** ES Module builds
-- **Fixed** type error with typescript on array+object shorthand (gh-322)
+### Removed
 
-# v3.2.0
+- **Flow types**: Flow type definitions have been removed in favor of TypeScript.
+- **Old TypeScript definitions**: The hand-written `index.d.ts` has been replaced with generated definitions.
 
-- **Added** Support denormalizing from Immutable entities (gh-228)
-- **Added** Brought back `get idAttribute()` to `schema.Entity` (gh-226)
-- **Fixed** Gracefully handle missing data in `denormalize` (gh-232)
-- **Fixed** Prevent infinite recursion in `denormalize` (gh-220)
+---
 
-# v3.1.0
-
-- **Added** `denormalize`. (gh-214)
-- **Changed** No longer requires all input in a polymorphic schema (`Array`, `Union`, `Values`) have a matching schema definition. (gh-208)
-- **Changed** Builds do both rollup and plain babel file conversions. `"main"` property in package.json points to babel-converted files.
-
-# v3.0.0
-
-The entire normalizr package has been rewritten from v2.x for this version. Please refer to the [documentation](/docs) for all changes.
-
-## Added
-
-- `schema.Entity`
-  - `processStrategy` for modifying `Entity` objects before they're moved to the `entities` stack.
-  - `mergeStrategy` for merging with multiple entities with the same ID.
-- Added `schema.Object`, with a shorthand of `{}`
-- Added `schema.Array`, with a shorthand of `[ schema ]`
-
-## Changed
-
-- `Schema` has been moved to a `schema` namespace, available at `schema.Entity`
-- `arrayOf` has been replaced by `schema.Array` or `[]`
-- `unionOf` has been replaced by `schema.Union`
-- `valuesOf` has been replaced by `schema.Values`
-
-## Removed
-
-- `normalize` no longer accepts an optional `options` argument. All options are assigned at the schema level.
-- Entity schema no longer accepts `defaults` as an option. Use a custom `processStrategy` option to apply defaults as needed.
-- `assignEntity` has been replaced by `processStrategy`
-- `meta` option. See `processStrategy`
+For changes prior to v4.0.0, see the [v3.x changelog](https://github.com/paularmstrong/normalizr/blob/master/CHANGELOG.md) in the original repository.

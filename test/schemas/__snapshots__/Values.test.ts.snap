@@ -1,0 +1,102 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ValuesSchema denormalization > denormalizes the values of an object with the given schema 1`] = `
+{
+  "fido": {
+    "id": 1,
+    "type": "dogs",
+  },
+  "fluffy": {
+    "id": 1,
+    "type": "cats",
+  },
+}
+`;
+
+exports[`ValuesSchema denormalization > denormalizes the values of an object with the given schema 2`] = `
+{
+  "fido": undefined,
+  "fluffy": undefined,
+}
+`;
+
+exports[`ValuesSchema normalization > can use a function to determine the schema when normalizing 1`] = `
+{
+  "entities": {
+    "cats": {
+      "1": {
+        "id": 1,
+        "type": "cat",
+      },
+    },
+    "dogs": {
+      "1": {
+        "id": 1,
+        "type": "dog",
+      },
+    },
+  },
+  "result": {
+    "fido": {
+      "id": 1,
+      "schema": "dogs",
+    },
+    "fluffy": {
+      "id": 1,
+      "schema": "cats",
+    },
+    "jim": {
+      "id": 2,
+      "type": "lizard",
+    },
+  },
+}
+`;
+
+exports[`ValuesSchema normalization > filters out null and undefined values 1`] = `
+{
+  "entities": {
+    "cats": {
+      "1": {
+        "id": 1,
+        "type": "cats",
+      },
+    },
+  },
+  "result": {
+    "fluffy": {
+      "id": 1,
+      "schema": "cats",
+    },
+  },
+}
+`;
+
+exports[`ValuesSchema normalization > normalizes the values of an object with the given schema 1`] = `
+{
+  "entities": {
+    "cats": {
+      "1": {
+        "id": 1,
+        "type": "cats",
+      },
+    },
+    "dogs": {
+      "1": {
+        "id": 1,
+        "type": "dogs",
+      },
+    },
+  },
+  "result": {
+    "fido": {
+      "id": 1,
+      "schema": "dogs",
+    },
+    "fluffy": {
+      "id": 1,
+      "schema": "cats",
+    },
+  },
+}
+`;

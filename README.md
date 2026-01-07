@@ -1,19 +1,132 @@
-# normalizr [![build status](https://img.shields.io/travis/paularmstrong/normalizr/master.svg?style=flat-square)](https://travis-ci.org/paularmstrong/normalizr) [![Coverage Status](https://img.shields.io/coveralls/paularmstrong/normalizr/master.svg?style=flat-square)](https://coveralls.io/github/paularmstrong/normalizr?branch=master) [![npm version](https://img.shields.io/npm/v/normalizr.svg?style=flat-square)](https://www.npmjs.com/package/normalizr) [![npm downloads](https://img.shields.io/npm/dm/normalizr.svg?style=flat-square)](https://www.npmjs.com/package/normalizr)
+# normalizr
 
-# 📣 Normalizr is no longer maintained
+Normalizes and denormalizes JSON according to schema for Redux and Flux applications.
 
-Due to lack of ability to find an invested maintainer and inability to find time to do routine maintenance and community building, this package is no longer maintained. Please see the discussion [🤝 Maintainer help wanted](https://github.com/paularmstrong/normalizr/discussions/493) for more information.
+## Install
 
-## FAQs
+```shell
+npm install normalizr
+```
 
-### Should I still use Normalizr?
+## Motivation
 
-If you need it, yes. Normalizr is and has been at a stable release for a very long time, used by thousands of others without issue.
+Many APIs, public or not, return JSON data that has deeply nested objects. Using data in this kind of structure is often very difficult for JavaScript applications, especially those using [Flux](http://facebook.github.io/flux/) or [Redux](http://redux.js.org/).
 
-### What should I do if I want other features or found a bug?
+## Solution
 
-Fork [Normalizr on Github](https://github.com/paularmstrong/normalizr) and maintain a version yourself.
+Normalizr is a small, but powerful utility for taking JSON with a schema definition and returning nested entities with their IDs, gathered in dictionaries.
 
-### Can I contribute back to Normalizr?
+## Quick Start
 
-There are no current plans to resurrect this origin of Normalizr. If a forked version becomes sufficiently maintained and popular, please reach out about merging the fork and changing maintainers.
+Consider a typical blog post. The API response for a single post might look something like this:
+
+```json
+{
+  "id": "123",
+  "author": {
+    "id": "1",
+    "name": "Paul"
+  },
+  "title": "My awesome blog post",
+  "comments": [
+    {
+      "id": "324",
+      "commenter": {
+        "id": "2",
+        "name": "Nicole"
+      }
+    }
+  ]
+}
+```
+
+We have two nested entity types within our `article`: `users` and `comments`. Using various `schema`, we can normalize all three entity types down:
+
+```ts
+import { normalize, schema } from 'normalizr';
+
+// Define a users schema
+const user = new schema.Entity('users');
+
+// Define your comments schema
+const comment = new schema.Entity('comments', {
+  commenter: user,
+});
+
+// Define your article
+const article = new schema.Entity('articles', {
+  author: user,
+  comments: [comment],
+});
+
+const normalizedData = normalize(originalData, article);
+```
+
+Now, `normalizedData` will be:
+
+```js
+{
+  result: "123",
+  entities: {
+    "articles": {
+      "123": {
+        id: "123",
+        author: "1",
+        title: "My awesome blog post",
+        comments: [ "324" ]
+      }
+    },
+    "users": {
+      "1": { "id": "1", "name": "Paul" },
+      "2": { "id": "2", "name": "Nicole" }
+    },
+    "comments": {
+      "324": { id: "324", "commenter": "2" }
+    }
+  }
+}
+```
+
+## Documentation
+
+- [Introduction](./docs/introduction.md)
+- [Quick Start](./docs/quickstart.md)
+- [API Reference](./docs/api.md)
+  - [normalize](./docs/api.md#normalizedata-schema)
+  - [denormalize](./docs/api.md#denormalizeinput-schema-entities-options)
+  - [schema](./docs/api.md#schema)
+  - [Type Utilities](./docs/api.md#type-utilities)
+- [FAQs](./docs/faqs.md)
+- [Using with JSONAPI](./docs/jsonapi.md)
+
+## TypeScript
+
+Normalizr is written in TypeScript and includes comprehensive type definitions. Type utilities like `Denormalized<S>`, `Normalized<S>`, and `EntitiesOf<S>` help you infer types from your schemas.
+
+```ts
+import { normalize, schema, Denormalized, EntitiesOf } from 'normalizr';
+
+interface User {
+  id: string;
+  name: string;
+}
+
+const userSchema = new schema.Entity<'users', User>('users');
+
+type Entities = EntitiesOf<typeof userSchema>;
+// { users: Record<string, User> }
+```
+
+## Examples
+
+- [Normalizing GitHub Issues](./examples/github)
+- [Relational Data](./examples/relationships)
+- [Interactive Redux](./examples/redux)
+
+## Credits
+
+Normalizr was originally created by [Dan Abramov](http://github.com/gaearon) and inspired by a conversation with [Jing Chen](https://twitter.com/jingc). Version 3 was a complete rewrite by [Paul Armstrong](https://twitter.com/paularmstrong). Version 4 is a TypeScript rewrite.
+
+## License
+
+MIT
