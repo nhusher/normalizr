@@ -202,13 +202,12 @@ const createEagerUnvisit: CreateUnvisitFn = (_entities, getEntity) => {
  * // { id: '123', title: 'My Article', author: { id: '1', name: 'Paul' } }
  * ```
  *
- * @example Custom unvisit for lazy denormalization
+ * @example Custom unvisit function
  * ```typescript
  * const result = denormalize('123', article, entities, {
  *   createUnvisit: (entities, getEntity) => {
- *     // Return a custom unvisit function that uses Proxies
- *     // for lazy resolution
- *     return myLazyUnvisit;
+ *     // Return a custom unvisit function
+ *     return myCustomUnvisit;
  *   }
  * });
  * ```
