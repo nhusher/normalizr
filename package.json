@@ -1,6 +1,6 @@
 {
-  "name": "normalizr",
-  "version": "4.0.0",
+  "name": "@teslanick/normalizr",
+  "version": "4.0.1",
   "description": "Normalizes and denormalizes JSON according to schema for Redux and Flux applications",
   "bugs": {
     "url": "https://github.com/paularmstrong/normalizr/issues"
@@ -22,6 +22,9 @@
   "files": [
     "dist/"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/normalizr.cjs",
   "module": "./dist/normalizr.js",
