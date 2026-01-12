@@ -2,6 +2,7 @@ import EntitySchema from './schemas/Entity.js';
 import * as ArrayUtils from './schemas/Array.js';
 import * as ObjectUtils from './schemas/Object.js';
 import { isImmutable } from './utils/immutable.js';
+import { hasOwn } from './utils/hasOwn.js';
 import type {
   Schema,
   SchemaClass,
@@ -56,7 +57,7 @@ function unvisitEntity(
   }
 
   // Initialize cache for this entity type
-  if (!cache[schema.key]) {
+  if (!hasOwn(cache, schema.key)) {
     cache[schema.key] = {};
   }
 
@@ -77,7 +78,7 @@ function unvisitEntity(
   }
 
   // Return cached version if already fully denormalized
-  if (cache[schema.key][id] !== undefined) {
+  if (hasOwn(cache[schema.key], id)) {
     return cache[schema.key][id];
   }
 
@@ -129,8 +130,16 @@ function getEntities(entities: EntitiesMap): GetEntityFn {
       ]);
     }
 
+    // Use hasOwn to avoid prototype pollution (e.g., id = "constructor")
+    if (!hasOwn(entities, schemaKey)) {
+      return undefined;
+    }
+    const entityStore = entities[schemaKey];
+    if (!hasOwn(entityStore, entityOrId)) {
+      return undefined;
+    }
     // Cast justified: entities store values are entity objects (Record<string, unknown>)
-    return entities[schemaKey]?.[entityOrId] as Record<string, unknown> | undefined;
+    return entityStore[entityOrId] as Record<string, unknown>;
   };
 }
 
