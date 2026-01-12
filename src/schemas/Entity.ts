@@ -35,12 +35,12 @@ function getDefaultGetId<T>(idAttribute: string): (input: T, parent: unknown, ke
  * Entity schema for normalizing objects with an ID.
  *
  * @typeParam TKey - The literal string key for this entity type (e.g., 'users')
- * @typeParam TData - The full entity data type
+ * @typeParam TData - The full entity data type (any object type, including interfaces without index signatures)
  * @typeParam TDefinition - The nested schema definition
  */
 export class EntitySchema<
   TKey extends string = string,
-  TData extends Record<string, unknown> = Record<string, unknown>,
+  TData extends object = Record<string, unknown>,
   TDefinition extends SchemaDefinition = SchemaDefinition,
 > implements EntitySchemaInterface {
   private _key: TKey;
