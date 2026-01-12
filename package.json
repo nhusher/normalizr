@@ -1,6 +1,6 @@
 {
   "name": "@teslanick/normalizr",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "Normalizes and denormalizes JSON according to schema for Redux and Flux applications",
   "bugs": {
     "url": "https://github.com/paularmstrong/normalizr/issues"
@@ -67,6 +67,7 @@
     "@typescript-eslint/parser": "^8.19.1",
     "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.17.0",
+    "fast-check": "^4.5.3",
     "immutable": "^4.3.7",
     "prettier": "^3.4.2",
     "rimraf": "^6.0.1",

@@ -12,12 +12,13 @@ describe(`${schema.Array.name} normalization`, () => {
     test('throws an error if created with more than one schema', () => {
       const userSchema = new schema.Entity('users');
       const catSchema = new schema.Entity('cats');
+      // @ts-expect-error - testing runtime error with invalid schema tuple
       expect(() => normalize([{ id: 1 }], [catSchema, userSchema])).toThrow();
     });
 
     test('passes its parent to its children when normalizing', () => {
-      const processStrategy = (entity: Record<string, unknown>, parent: { id: number }, key: string | undefined) => {
-        return { ...entity, parentId: parent.id, parentKey: key };
+      const processStrategy = (entity: unknown, parent: unknown, key: string | undefined) => {
+        return { ...(entity as object), parentId: (parent as { id: number }).id, parentKey: key };
       };
       const childEntity = new schema.Entity('children', {}, { processStrategy });
       const parentEntity = new schema.Entity('parents', {
@@ -50,7 +51,7 @@ describe(`${schema.Array.name} normalization`, () => {
     });
 
     test('normalizes multiple entities', () => {
-      const inferSchemaFn = vi.fn((input: { type?: string }) => input.type || 'dogs');
+      const inferSchemaFn = vi.fn((input: unknown) => (input as { type?: string }).type || 'dogs');
       const catSchema = new schema.Entity('cats');
       const peopleSchema = new schema.Entity('person');
       const listSchema = new schema.Array(
@@ -100,7 +101,7 @@ describe(`${schema.Array.name} denormalization`, () => {
         },
       };
       expect(denormalize([1, 2], [cats], entities)).toMatchSnapshot();
-      expect(denormalize([1, 2], [cats], fromJS(entities))).toMatchSnapshot();
+      expect(denormalize([1, 2], [cats], fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
     });
 
     test('returns the input value if is not an array', () => {
@@ -116,7 +117,7 @@ describe(`${schema.Array.name} denormalization`, () => {
       };
 
       expect(denormalize('123', taco, entities)).toMatchSnapshot();
-      expect(denormalize('123', taco, fromJS(entities))).toMatchSnapshot();
+      expect(denormalize('123', taco, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
     });
   });
 
@@ -131,7 +132,7 @@ describe(`${schema.Array.name} denormalization`, () => {
       };
       const catList = new schema.Array(cats);
       expect(denormalize([1, 2], catList, entities)).toMatchSnapshot();
-      expect(denormalize([1, 2], catList, fromJS(entities))).toMatchSnapshot();
+      expect(denormalize([1, 2], catList, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
     });
 
     test('denormalizes multiple entities', () => {
@@ -143,7 +144,7 @@ describe(`${schema.Array.name} denormalization`, () => {
           dogs: {},
           people: peopleSchema,
         },
-        (input: { type?: string }) => input.type || 'dogs',
+        (input: unknown) => (input as { type?: string }).type || 'dogs',
       );
 
       const entities = {
@@ -173,7 +174,7 @@ describe(`${schema.Array.name} denormalization`, () => {
       ];
 
       expect(denormalize(input, listSchema, entities)).toMatchSnapshot();
-      expect(denormalize(input, listSchema, fromJS(entities))).toMatchSnapshot();
+      expect(denormalize(input, listSchema, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
     });
 
     test('returns the input value if is not an array', () => {
@@ -190,7 +191,7 @@ describe(`${schema.Array.name} denormalization`, () => {
       };
 
       expect(denormalize('123', taco, entities)).toMatchSnapshot();
-      expect(denormalize('123', taco, fromJS(entities))).toMatchSnapshot();
+      expect(denormalize('123', taco, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
     });
 
     test('does not assume mapping of schema to attribute values when schemaAttribute is not set', () => {

@@ -1,4 +1,5 @@
 import { isImmutable, denormalizeImmutable } from '../utils/immutable.js';
+import { hasOwn } from '../utils/hasOwn.js';
 import type {
   Schema,
   SchemaDefinition,
@@ -196,10 +197,10 @@ export class EntitySchema<
     const entityType = this.key;
 
     // Track visited entities to handle circular references
-    if (!(entityType in visitedEntities)) {
+    if (!hasOwn(visitedEntities, entityType)) {
       visitedEntities[entityType] = {};
     }
-    if (!(id in visitedEntities[entityType])) {
+    if (!hasOwn(visitedEntities[entityType], id)) {
       visitedEntities[entityType][id] = [];
     }
     if (visitedEntities[entityType][id].some((entity) => entity === typedInput)) {

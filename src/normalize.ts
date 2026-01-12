@@ -1,5 +1,6 @@
 import * as ArrayUtils from './schemas/Array.js';
 import * as ObjectUtils from './schemas/Object.js';
+import { hasOwn } from './utils/hasOwn.js';
 import type {
   Schema,
   SchemaClass,
@@ -67,12 +68,12 @@ const addEntities =
     const schemaKey = schema.key;
     const id = schema.getId(value, parent, key);
 
-    if (!(schemaKey in entities)) {
+    if (!hasOwn(entities, schemaKey)) {
       entities[schemaKey] = {};
     }
 
-    const existingEntity = entities[schemaKey][id];
-    if (existingEntity) {
+    if (hasOwn(entities[schemaKey], id)) {
+      const existingEntity = entities[schemaKey][id];
       // Cast justified: entities store contains Record<string, unknown> values
       entities[schemaKey][id] = schema.merge(existingEntity as Record<string, unknown>, processedEntity);
     } else {
