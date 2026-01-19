@@ -306,20 +306,12 @@ export interface EntityLike<TKey extends string = string, TData = unknown> {
 }
 
 /**
- * Internal helper to collect entities from object schema definitions.
- */
-type CollectEntitiesFromObject<T extends Record<string, unknown>, Acc extends EntitiesMap> =
-  T extends Record<string, infer V> ? EntitiesOf<V, Acc> : Acc;
-
-/**
- * Extract the entities map type from a schema tree.
+ * Extract the entities map type from a schema or schemas.
  *
- * This type utility recursively walks a schema and collects all entity
- * types into a single map structure matching the `entities` output of
- * `normalize()`. Each entity schema contributes its key and data type.
+ * This type extracts entity types from schemas into a map structure
+ * matching the `entities` output of `normalize()`.
  *
- * @typeParam S - The schema to extract entities from
- * @typeParam Acc - Accumulator for recursive collection (internal use)
+ * @typeParam S - The schema(s) to extract entities from
  *
  * @example Single entity
  * ```typescript
@@ -329,26 +321,55 @@ type CollectEntitiesFromObject<T extends Record<string, unknown>, Acc extends En
  * // Result: { users: Record<string, User> }
  * ```
  *
- * @example Nested entities
+ * @example Multiple schemas (use union for composition)
  * ```typescript
- * const articleSchema = new schema.Entity<'articles', Article, { author: typeof userSchema }>('articles', {
- *   author: userSchema
- * });
+ * const userSchema = new schema.Entity<'users', User>('users');
+ * const articleSchema = new schema.Entity<'articles', Article>('articles');
  *
- * type Entities = EntitiesOf<typeof articleSchema>;
- * // Result: { articles: Record<string, Article>; users: Record<string, User> }
+ * type Entities = EntitiesOf<typeof userSchema | typeof articleSchema>;
+ * // Result: { users: Record<string, User> } | { articles: Record<string, Article> }
+ *
+ * // For intersection, compose manually:
+ * type AllEntities = EntitiesOf<typeof userSchema> & EntitiesOf<typeof articleSchema>;
+ * // Result: { users: Record<string, User>; articles: Record<string, Article> }
+ * ```
+ *
+ * @example Array and object shorthands
+ * ```typescript
+ * type FromArray = EntitiesOf<[typeof userSchema]>;
+ * // Result: { users: Record<string, User> }
+ *
+ * type FromObject = EntitiesOf<{ user: typeof userSchema }>;
+ * // Result: { users: Record<string, User> }
  * ```
  */
-export type EntitiesOf<S, Acc extends EntitiesMap = Record<string, never>> =
+export type EntitiesOf<S> =
   S extends EntityLike<infer TKey, infer TData>
-    ? Acc & { [K in TKey]: Record<IdType, TData> }
+    ? { [K in TKey]: Record<IdType, TData> }
     : S extends SchemaClass
-      ? Acc
+      ? {}
       : S extends readonly [infer Inner]
-        ? EntitiesOf<Inner, Acc>
-        : S extends Record<string, unknown>
-          ? CollectEntitiesFromObject<S, Acc>
-          : Acc;
+        ? EntitiesOf<Inner>
+        : S extends Record<string, infer V>
+          ? EntitiesOf<V>
+          : {};
+
+// ============================================================================
+// Internal Type Utilities
+// ============================================================================
+
+/**
+ * Flattens intersection types into a single object type.
+ *
+ * This utility forces TypeScript to eagerly evaluate intersection types
+ * (like `{ a: string } & { b: number }`) into a single object type
+ * (`{ a: string; b: number }`). This improves IDE display and ensures
+ * consistent behavior across different TypeScript language server
+ * implementations.
+ *
+ * @internal
+ */
+type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
 
 // ============================================================================
 // Utility Types for Schema Construction
@@ -376,19 +397,20 @@ export type EntitiesOf<S, Acc extends EntitiesMap = Record<string, never>> =
  *
  * // Let TypeScript infer it:
  * type Article = InferredEntity<typeof articleSchema.schema>;
- * // Result: { id: string; author?: User; reviewers?: User[]; } & Record<string, unknown>
+ * // Result: { id: string; author?: User; reviewers?: User[]; }
  * ```
  *
  * @remarks
  * - All schema-defined fields are optional (entities may be partially loaded)
- * - Includes `& Record<string, unknown>` for additional untyped fields
- * - For stricter typing, declare an explicit interface instead
+ * - Only includes fields from the schema definition; for additional fields, declare an explicit interface
  */
-export type InferredEntity<TDefinition extends SchemaDefinition = Record<string, never>> = {
-  id: IdType;
-} & {
-  [K in keyof TDefinition]?: Denormalized<TDefinition[K]>;
-} & Record<string, unknown>;
+export type InferredEntity<TDefinition extends SchemaDefinition = Record<string, never>> = Expand<
+  {
+    id: IdType;
+  } & {
+    [K in keyof TDefinition]?: Denormalized<TDefinition[K]>;
+  }
+>;
 
 /**
  * Constructs a normalized entity type from a schema definition.
@@ -410,16 +432,19 @@ export type InferredEntity<TDefinition extends SchemaDefinition = Record<string,
  * // { id: '1', title: 'Hello', author: '42' }  // author is now just an ID
  *
  * type NormalizedArticle = NormalizedEntity<typeof articleSchema.schema>;
- * // Result: { id: string; author?: string; } & Record<string, unknown>
+ * // Result: { id: string; author?: string; }
  * ```
  *
  * @remarks
  * - Use this to type the values in your entities store
  * - Nested entity references become their ID types (typically `string`)
  * - Nested arrays become arrays of IDs
+ * - Only includes fields from the schema definition; for additional fields, declare an explicit interface
  */
-export type NormalizedEntity<TDefinition extends SchemaDefinition = Record<string, never>> = {
-  id: IdType;
-} & {
-  [K in keyof TDefinition]?: Normalized<TDefinition[K]>;
-} & Record<string, unknown>;
+export type NormalizedEntity<TDefinition extends SchemaDefinition = Record<string, never>> = Expand<
+  {
+    id: IdType;
+  } & {
+    [K in keyof TDefinition]?: Normalized<TDefinition[K]>;
+  }
+>;

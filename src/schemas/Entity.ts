@@ -41,7 +41,7 @@ function getDefaultGetId<T>(idAttribute: string): (input: T, parent: unknown, ke
 export class EntitySchema<
   TKey extends string = string,
   TData extends object = Record<string, unknown>,
-  TDefinition extends SchemaDefinition = SchemaDefinition,
+  TDefinition extends SchemaDefinition = {},
 > implements EntitySchemaInterface {
   private _key: TKey;
   private _idAttribute: IdAttribute<TData>;
@@ -49,6 +49,12 @@ export class EntitySchema<
   private _mergeStrategy: MergeStrategy<Record<string, unknown>>;
   private _processStrategy: ProcessStrategy<TData>;
   private _fallbackStrategy: FallbackStrategy<TData>;
+
+  /**
+   * Phantom property for type inference. Not used at runtime.
+   * Allows EntitiesOf<S> to extract the entity data type.
+   */
+  readonly _entityType?: TData;
 
   /**
    * The nested schema definition for this entity.

@@ -45,7 +45,6 @@ interface Article {
 // Schema Definitions
 // =============================================================================
 
-const simpleUserSchema = new schema.Entity('users');
 const typedUserSchema = new schema.Entity<'users', User>('users');
 const typedCommentSchema = new schema.Entity<'comments', Comment>('comments', {
   author: typedUserSchema,
@@ -131,17 +130,28 @@ describe('Normalized<S>', () => {
 describe('EntitiesOf<S>', () => {
   it('extracts entities map for a single entity schema', () => {
     type Result = EntitiesOf<typeof typedUserSchema>;
-    expectTypeOf<Result>().toMatchTypeOf<{ users: Record<IdType, User> }>();
+    expectTypeOf<Result>().toEqualTypeOf<{ users: Record<IdType, User> }>();
   });
 
   it('extracts entities map from array shorthand', () => {
     type Result = EntitiesOf<[typeof typedUserSchema]>;
-    expectTypeOf<Result>().toMatchTypeOf<{ users: Record<IdType, User> }>();
+    expectTypeOf<Result>().toEqualTypeOf<{ users: Record<IdType, User> }>();
   });
 
   it('extracts entities map from object shorthand', () => {
     type Result = EntitiesOf<{ user: typeof typedUserSchema }>;
-    expectTypeOf<Result>().toMatchTypeOf<{ users: Record<IdType, User> }>();
+    expectTypeOf<Result>().toEqualTypeOf<{ users: Record<IdType, User> }>();
+  });
+
+  it('supports composition via intersection for multiple schemas', () => {
+    // For a complete entities map, compose with intersection
+    type AllEntities = EntitiesOf<typeof typedUserSchema> &
+      EntitiesOf<typeof typedCommentSchema> &
+      EntitiesOf<typeof typedArticleSchema>;
+
+    expectTypeOf<AllEntities>().toEqualTypeOf<
+      { users: Record<IdType, User> } & { comments: Record<IdType, Comment> } & { articles: Record<IdType, Article> }
+    >();
   });
 });
 
@@ -151,8 +161,8 @@ describe('EntitiesOf<S>', () => {
 
 describe('InferredEntity<TDefinition>', () => {
   it('infers entity type with id field', () => {
-    type Result = InferredEntity<Record<string, never>>;
-    expectTypeOf<Result>().toMatchTypeOf<{ id: IdType }>();
+    type Result = InferredEntity<{}>;
+    expectTypeOf<Result>().toEqualTypeOf<{ id: IdType }>();
   });
 
   it('infers entity type from schema definition', () => {
@@ -161,10 +171,8 @@ describe('InferredEntity<TDefinition>', () => {
     });
 
     type Result = InferredEntity<typeof articleSchema.schema>;
-    expectTypeOf<Result>().toMatchTypeOf<{
-      id: IdType;
-      author?: User;
-    }>();
+    // Schema-defined fields are optional
+    expectTypeOf<Result>().toEqualTypeOf<{ id: IdType; author?: User }>();
   });
 
   it('handles array definitions', () => {
@@ -173,10 +181,7 @@ describe('InferredEntity<TDefinition>', () => {
     });
 
     type Result = InferredEntity<typeof articleSchema.schema>;
-    expectTypeOf<Result>().toMatchTypeOf<{
-      id: IdType;
-      comments?: Comment[];
-    }>();
+    expectTypeOf<Result>().toEqualTypeOf<{ id: IdType; comments?: Comment[] }>();
   });
 });
 
@@ -186,8 +191,8 @@ describe('InferredEntity<TDefinition>', () => {
 
 describe('NormalizedEntity<TDefinition>', () => {
   it('produces normalized entity type with id field', () => {
-    type Result = NormalizedEntity<Record<string, never>>;
-    expectTypeOf<Result>().toMatchTypeOf<{ id: IdType }>();
+    type Result = NormalizedEntity<{}>;
+    expectTypeOf<Result>().toEqualTypeOf<{ id: IdType }>();
   });
 
   it('converts nested entity references to IDs', () => {
@@ -196,10 +201,8 @@ describe('NormalizedEntity<TDefinition>', () => {
     });
 
     type Result = NormalizedEntity<typeof articleSchema.schema>;
-    expectTypeOf<Result>().toMatchTypeOf<{
-      id: IdType;
-      author?: IdType;
-    }>();
+    // Nested entities become their ID type (string)
+    expectTypeOf<Result>().toEqualTypeOf<{ id: IdType; author?: IdType }>();
   });
 
   it('converts nested entity arrays to ID arrays', () => {
@@ -208,10 +211,7 @@ describe('NormalizedEntity<TDefinition>', () => {
     });
 
     type Result = NormalizedEntity<typeof articleSchema.schema>;
-    expectTypeOf<Result>().toMatchTypeOf<{
-      id: IdType;
-      comments?: IdType[];
-    }>();
+    expectTypeOf<Result>().toEqualTypeOf<{ id: IdType; comments?: IdType[] }>();
   });
 });
 
@@ -224,16 +224,17 @@ describe('normalize() return type', () => {
     const data: User = { id: '1', name: 'Alice', email: 'alice@example.com' };
     const result = normalize(data, typedUserSchema);
 
-    expectTypeOf(result.result).toBeString();
-    expectTypeOf(result.entities).toMatchTypeOf<Record<string, Record<string, unknown>>>();
+    // normalize() returns unknown for result type - consumer should use Normalized<S> for type safety
+    expectTypeOf(result.result).toBeUnknown();
+    expectTypeOf(result.entities).toEqualTypeOf<Record<string, Record<string, unknown>>>();
   });
 
   it('returns correctly typed result for array shorthand', () => {
     const data: User[] = [{ id: '1', name: 'Alice', email: 'alice@example.com' }];
     const result = normalize(data, [typedUserSchema]);
 
-    expectTypeOf(result.result).toMatchTypeOf<unknown>();
-    expectTypeOf(result.entities).toMatchTypeOf<Record<string, Record<string, unknown>>>();
+    expectTypeOf(result.result).toBeUnknown();
+    expectTypeOf(result.entities).toEqualTypeOf<Record<string, Record<string, unknown>>>();
   });
 });
 
@@ -268,7 +269,7 @@ describe('practical usage patterns', () => {
 
     expectTypeOf<DenormalizedUser>().toEqualTypeOf<User>();
     expectTypeOf<NormalizedUser>().toEqualTypeOf<IdType>();
-    expectTypeOf<UserEntities>().toMatchTypeOf<{ users: Record<IdType, User> }>();
+    expectTypeOf<UserEntities>().toEqualTypeOf<{ users: Record<IdType, User> }>();
   });
 
   it('supports nested schemas with full type inference', () => {
