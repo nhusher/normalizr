@@ -10,7 +10,7 @@ describe(`${schema.Values.name} normalization`, () => {
         dogs: dog,
         cats: cat,
       },
-      (entity: { type: string }) => entity.type,
+      (entity: unknown) => (entity as { type: string }).type,
     );
 
     expect(
@@ -21,7 +21,20 @@ describe(`${schema.Values.name} normalization`, () => {
         },
         valuesSchema,
       ),
-    ).toMatchSnapshot();
+    ).toEqual({
+      entities: {
+        cats: {
+          1: { id: 1, type: 'cats' },
+        },
+        dogs: {
+          1: { id: 1, type: 'dogs' },
+        },
+      },
+      result: {
+        fido: { id: 1, schema: 'dogs' },
+        fluffy: { id: 1, schema: 'cats' },
+      },
+    });
   });
 
   test('can use a function to determine the schema when normalizing', () => {
@@ -32,7 +45,7 @@ describe(`${schema.Values.name} normalization`, () => {
         dogs: dog,
         cats: cat,
       },
-      (entity: { type: string }) => `${entity.type}s`,
+      (entity: unknown) => `${(entity as { type: string }).type}s`,
     );
 
     expect(
@@ -44,7 +57,21 @@ describe(`${schema.Values.name} normalization`, () => {
         },
         valuesSchema,
       ),
-    ).toMatchSnapshot();
+    ).toEqual({
+      entities: {
+        cats: {
+          1: { id: 1, type: 'cat' },
+        },
+        dogs: {
+          1: { id: 1, type: 'dog' },
+        },
+      },
+      result: {
+        fido: { id: 1, schema: 'dogs' },
+        fluffy: { id: 1, schema: 'cats' },
+        jim: { id: 2, type: 'lizard' },
+      },
+    });
   });
 
   test('filters out null and undefined values', () => {
@@ -55,7 +82,7 @@ describe(`${schema.Values.name} normalization`, () => {
         dogs: dog,
         cats: cat,
       },
-      (entity: { type: string }) => entity.type,
+      (entity: unknown) => (entity as { type: string }).type,
     );
 
     expect(
@@ -67,7 +94,16 @@ describe(`${schema.Values.name} normalization`, () => {
         },
         valuesSchema,
       ),
-    ).toMatchSnapshot();
+    ).toEqual({
+      entities: {
+        cats: {
+          1: { id: 1, type: 'cats' },
+        },
+      },
+      result: {
+        fluffy: { id: 1, schema: 'cats' },
+      },
+    });
   });
 });
 
@@ -80,7 +116,7 @@ describe(`${schema.Values.name} denormalization`, () => {
         dogs: dog,
         cats: cat,
       },
-      (entity: { type: string }) => entity.type,
+      (entity: unknown) => (entity as { type: string }).type,
     );
 
     const entities = {
@@ -97,6 +133,9 @@ describe(`${schema.Values.name} denormalization`, () => {
         valuesSchema,
         entities,
       ),
-    ).toMatchSnapshot();
+    ).toEqual({
+      fido: { id: 1, type: 'dogs' },
+      fluffy: { id: 1, type: 'cats' },
+    });
   });
 });

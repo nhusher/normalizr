@@ -6,7 +6,14 @@ const values = <T>(obj: Record<string, T>): T[] => Object.keys(obj).map((key) =>
 describe(`${schema.Entity.name} normalization`, () => {
   test('normalizes an entity', () => {
     const entity = new schema.Entity('item');
-    expect(normalize({ id: 1 }, entity)).toMatchSnapshot();
+    expect(normalize({ id: 1 }, entity)).toEqual({
+      entities: {
+        item: {
+          1: { id: 1 },
+        },
+      },
+      result: 1,
+    });
   });
 
   describe('key', () => {
@@ -29,14 +36,35 @@ describe(`${schema.Entity.name} normalization`, () => {
   describe('idAttribute', () => {
     test('can use a custom idAttribute string', () => {
       const user = new schema.Entity('users', {}, { idAttribute: 'id_str' });
-      expect(normalize({ id_str: '134351', name: 'Kathy' }, user)).toMatchSnapshot();
+      expect(normalize({ id_str: '134351', name: 'Kathy' }, user)).toEqual({
+        entities: {
+          users: {
+            134351: {
+              id_str: '134351',
+              name: 'Kathy',
+            },
+          },
+        },
+        result: '134351',
+      });
     });
 
     test('can normalize entity IDs based on their object key', () => {
       const user = new schema.Entity('users', {}, { idAttribute: (_entity, _parent, key) => key! });
       const inputSchema = new schema.Values({ users: user }, () => 'users');
 
-      expect(normalize({ 4: { name: 'taco' }, 56: { name: 'burrito' } }, inputSchema)).toMatchSnapshot();
+      expect(normalize({ 4: { name: 'taco' }, 56: { name: 'burrito' } }, inputSchema)).toEqual({
+        entities: {
+          users: {
+            4: { name: 'taco' },
+            56: { name: 'burrito' },
+          },
+        },
+        result: {
+          4: { id: '4', schema: 'users' },
+          56: { id: '56', schema: 'users' },
+        },
+      });
     });
 
     test("can build the entity's ID from the parent object", () => {
@@ -50,7 +78,20 @@ describe(`${schema.Entity.name} normalization`, () => {
       );
       const inputSchema = new schema.Object({ user });
 
-      expect(normalize({ name: 'tacos', user: { id: '4', name: 'Jimmy' } }, inputSchema)).toMatchSnapshot();
+      expect(normalize({ name: 'tacos', user: { id: '4', name: 'Jimmy' } }, inputSchema)).toEqual({
+        entities: {
+          users: {
+            'tacos-user-4': {
+              id: '4',
+              name: 'Jimmy',
+            },
+          },
+        },
+        result: {
+          name: 'tacos',
+          user: 'tacos-user-4',
+        },
+      });
     });
   });
 
@@ -65,14 +106,27 @@ describe(`${schema.Entity.name} normalization`, () => {
           ],
           [mySchema],
         ),
-      ).toMatchSnapshot();
+      ).toEqual({
+        entities: {
+          tacos: {
+            1: {
+              alias: 'bar',
+              id: 1,
+              name: 'bar',
+            },
+          },
+        },
+        result: [1, 1],
+      });
     });
 
     test('can use a custom merging strategy', () => {
       const mergeStrategy = (entityA: { name: string }, entityB: { name: string }) => {
         return { ...entityA, ...entityB, name: entityA.name };
       };
-      const mySchema = new schema.Entity('tacos', {}, { mergeStrategy });
+
+      type Taco = { id: number; name: string; alias?: string };
+      const mySchema = new schema.Entity('tacos', {}, { mergeStrategy }).as<Taco>();
 
       expect(
         normalize(
@@ -82,7 +136,18 @@ describe(`${schema.Entity.name} normalization`, () => {
           ],
           [mySchema],
         ),
-      ).toMatchSnapshot();
+      ).toEqual({
+        entities: {
+          tacos: {
+            1: {
+              alias: 'bar',
+              id: 1,
+              name: 'foo',
+            },
+          },
+        },
+        result: [1, 1],
+      });
     });
   });
 
@@ -91,9 +156,22 @@ describe(`${schema.Entity.name} normalization`, () => {
       const processStrategy = (entity: { id: number }) => {
         return { ...entity, slug: `thing-${entity.id}` };
       };
-      const mySchema = new schema.Entity('tacos', {}, { processStrategy });
 
-      expect(normalize({ id: 1, name: 'foo' }, mySchema)).toMatchSnapshot();
+      type Taco = { id: number; name: string };
+      const mySchema = new schema.Entity('tacos', {}, { processStrategy }).as<Taco>();
+
+      expect(normalize({ id: 1, name: 'foo' }, mySchema)).toEqual({
+        entities: {
+          tacos: {
+            1: {
+              id: 1,
+              name: 'foo',
+              slug: 'thing-1',
+            },
+          },
+        },
+        result: 1,
+      });
     });
 
     test('can use information from the parent in the process strategy', () => {
@@ -114,7 +192,26 @@ describe(`${schema.Entity.name} normalization`, () => {
           },
           parentEntity,
         ),
-      ).toMatchSnapshot();
+      ).toEqual({
+        entities: {
+          children: {
+            4: {
+              content: 'child',
+              id: 4,
+              parentId: 1,
+              parentKey: 'child',
+            },
+          },
+          parents: {
+            1: {
+              child: 4,
+              content: 'parent',
+              id: 1,
+            },
+          },
+        },
+        result: 1,
+      });
     });
 
     test('is run before and passed to the schema normalization', () => {
@@ -135,7 +232,25 @@ describe(`${schema.Entity.name} normalization`, () => {
         },
       );
 
-      expect(normalize({ message: { id: '123', data: { attachment: { id: '456' } } } }, myEntity)).toMatchSnapshot();
+      expect(normalize({ message: { id: '123', data: { attachment: { id: '456' } } } } as any, myEntity)).toEqual({
+        entities: {
+          attachments: {
+            456: {
+              id: '456',
+            },
+          },
+          entries: {
+            123: {
+              data: {
+                attachment: '456',
+              },
+              id: '123',
+              type: 'message',
+            },
+          },
+        },
+        result: '123',
+      });
     });
   });
 });
@@ -148,7 +263,10 @@ describe(`${schema.Entity.name} denormalization`, () => {
         1: { id: 1, type: 'foo' },
       },
     };
-    expect(denormalize(1, mySchema, entities)).toMatchSnapshot();
+    expect(denormalize(1, mySchema, entities)).toEqual({
+      id: 1,
+      type: 'foo',
+    });
   });
 
   test('denormalizes deep entities', () => {
@@ -167,8 +285,13 @@ describe(`${schema.Entity.name} denormalization`, () => {
       },
     };
 
-    expect(denormalize(1, menuSchema, entities)).toMatchSnapshot();
-    expect(denormalize(2, menuSchema, entities)).toMatchSnapshot();
+    expect(denormalize(1, menuSchema, entities)).toEqual({
+      food: { id: 1 },
+      id: 1,
+    });
+    expect(denormalize(2, menuSchema, entities)).toEqual({
+      id: 2,
+    });
   });
 
   test('denormalizes to undefined for missing data', () => {
@@ -186,8 +309,11 @@ describe(`${schema.Entity.name} denormalization`, () => {
       },
     };
 
-    expect(denormalize(1, menuSchema, entities)).toMatchSnapshot();
-    expect(denormalize(2, menuSchema, entities)).toMatchSnapshot();
+    expect(denormalize(1, menuSchema, entities)).toEqual({
+      food: undefined,
+      id: 1,
+    });
+    expect(denormalize(2, menuSchema, entities)).toBeUndefined();
   });
 
   test('can denormalize already partially denormalized data', () => {
@@ -205,7 +331,10 @@ describe(`${schema.Entity.name} denormalization`, () => {
       },
     };
 
-    expect(denormalize(1, menuSchema, entities)).toMatchSnapshot();
+    expect(denormalize(1, menuSchema, entities)).toEqual({
+      food: { id: 1 },
+      id: 1,
+    });
   });
 
   test('denormalizes recursive dependencies', () => {
@@ -237,8 +366,31 @@ describe(`${schema.Entity.name} denormalization`, () => {
         },
       },
     };
-    expect(denormalize('123', report, entities)).toMatchSnapshot();
-    expect(denormalize('456', user, entities)).toMatchSnapshot();
+
+    const denormalizedReport = denormalize('123', report, entities) as {
+      id: string;
+      title: string;
+      draftedBy: { id: string; role: string; reports: unknown[] };
+      publishedBy: unknown;
+    };
+    expect(denormalizedReport.id).toBe('123');
+    expect(denormalizedReport.title).toBe('Weekly report');
+    expect(denormalizedReport.draftedBy.id).toBe('456');
+    expect(denormalizedReport.draftedBy.role).toBe('manager');
+    expect(denormalizedReport.draftedBy.reports[0]).toBe(denormalizedReport);
+    expect(denormalizedReport.publishedBy).toBe(denormalizedReport.draftedBy);
+
+    const denormalizedUser = denormalize('456', user, entities) as {
+      id: string;
+      role: string;
+      reports: Array<{ id: string; title: string; draftedBy: unknown; publishedBy: unknown }>;
+    };
+    expect(denormalizedUser.id).toBe('456');
+    expect(denormalizedUser.role).toBe('manager');
+    expect(denormalizedUser.reports[0].id).toBe('123');
+    expect(denormalizedUser.reports[0].title).toBe('Weekly report');
+    expect(denormalizedUser.reports[0].draftedBy).toBe(denormalizedUser);
+    expect(denormalizedUser.reports[0].publishedBy).toBe(denormalizedUser);
   });
 
   test('denormalizes entities with referential equality', () => {

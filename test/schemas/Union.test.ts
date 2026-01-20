@@ -18,8 +18,28 @@ describe(`${schema.Union.name} normalization`, () => {
       'type',
     );
 
-    expect(normalize({ id: 1, type: 'users' }, union)).toMatchSnapshot();
-    expect(normalize({ id: 2, type: 'groups' }, union)).toMatchSnapshot();
+    expect(normalize({ id: 1, type: 'users' }, union)).toEqual({
+      entities: {
+        users: {
+          1: { id: 1, type: 'users' },
+        },
+      },
+      result: {
+        id: 1,
+        schema: 'users',
+      },
+    });
+    expect(normalize({ id: 2, type: 'groups' }, union)).toEqual({
+      entities: {
+        groups: {
+          2: { id: 2, type: 'groups' },
+        },
+      },
+      result: {
+        id: 2,
+        schema: 'groups',
+      },
+    });
   });
 
   test('normalizes an array of multiple entities using a function to infer the schemaAttribute', () => {
@@ -30,14 +50,41 @@ describe(`${schema.Union.name} normalization`, () => {
         users: user,
         groups: group,
       },
-      (input: { username?: string; groupname?: string }) => {
-        return input.username ? 'users' : input.groupname ? 'groups' : '';
+      (input: unknown) => {
+        const obj = input as { username?: string; groupname?: string };
+        return obj.username ? 'users' : obj.groupname ? 'groups' : '';
       },
     );
 
-    expect(normalize({ id: 1, username: 'Janey' }, union)).toMatchSnapshot();
-    expect(normalize({ id: 2, groupname: 'People' }, union)).toMatchSnapshot();
-    expect(normalize({ id: 3, notdefined: 'yep' }, union)).toMatchSnapshot();
+    expect(normalize({ id: 1, username: 'Janey' }, union)).toEqual({
+      entities: {
+        users: {
+          1: { id: 1, username: 'Janey' },
+        },
+      },
+      result: {
+        id: 1,
+        schema: 'users',
+      },
+    });
+    expect(normalize({ id: 2, groupname: 'People' }, union)).toEqual({
+      entities: {
+        groups: {
+          2: { groupname: 'People', id: 2 },
+        },
+      },
+      result: {
+        id: 2,
+        schema: 'groups',
+      },
+    });
+    expect(normalize({ id: 3, notdefined: 'yep' }, union)).toEqual({
+      entities: {},
+      result: {
+        id: 3,
+        notdefined: 'yep',
+      },
+    });
   });
 });
 
@@ -62,8 +109,16 @@ describe(`${schema.Union.name} denormalization`, () => {
       'type',
     );
 
-    expect(denormalize({ id: 1, schema: 'users' }, union, entities)).toMatchSnapshot();
-    expect(denormalize({ id: 2, schema: 'groups' }, union, entities)).toMatchSnapshot();
+    expect(denormalize({ id: 1, schema: 'users' }, union, entities)).toEqual({
+      id: 1,
+      type: 'users',
+      username: 'Janey',
+    });
+    expect(denormalize({ id: 2, schema: 'groups' }, union, entities)).toEqual({
+      groupname: 'People',
+      id: 2,
+      type: 'groups',
+    });
   });
 
   test('denormalizes an array of multiple entities using a function to infer the schemaAttribute', () => {
@@ -72,13 +127,21 @@ describe(`${schema.Union.name} denormalization`, () => {
         users: user,
         groups: group,
       },
-      (input: { username?: string }) => {
-        return input.username ? 'users' : 'groups';
+      (input: unknown) => {
+        return (input as { username?: string }).username ? 'users' : 'groups';
       },
     );
 
-    expect(denormalize({ id: 1, schema: 'users' }, union, entities)).toMatchSnapshot();
-    expect(denormalize({ id: 2, schema: 'groups' }, union, entities)).toMatchSnapshot();
+    expect(denormalize({ id: 1, schema: 'users' }, union, entities)).toEqual({
+      id: 1,
+      type: 'users',
+      username: 'Janey',
+    });
+    expect(denormalize({ id: 2, schema: 'groups' }, union, entities)).toEqual({
+      groupname: 'People',
+      id: 2,
+      type: 'groups',
+    });
   });
 
   test('returns the original value no schema is given', () => {
@@ -87,11 +150,13 @@ describe(`${schema.Union.name} denormalization`, () => {
         users: user,
         groups: group,
       },
-      (input: { username?: string }) => {
-        return input.username ? 'users' : 'groups';
+      (input: unknown) => {
+        return (input as { username?: string }).username ? 'users' : 'groups';
       },
     );
 
-    expect(denormalize({ id: 1 }, union, entities)).toMatchSnapshot();
+    expect(denormalize({ id: 1 }, union, entities)).toEqual({
+      id: 1,
+    });
   });
 });

@@ -47,7 +47,7 @@ describe('api.md examples', () => {
     test('api.md#denormalize-usage - basic denormalize example', () => {
       const user = new schema.Entity('users');
       const entities = { users: { '1': { id: 1 }, '2': { id: 2 } } };
-      const denormalizedData = denormalize({ users: ['1', '2'] }, { users: [user] }, entities);
+      const denormalizedData = denormalize({ users: [1, 2] }, { users: [user] }, entities);
 
       expect(denormalizedData).toEqual({
         users: [{ id: 1 }, { id: 2 }],
@@ -221,7 +221,7 @@ describe('api.md examples', () => {
           author: authorSchema,
         });
 
-        const result = denormalize(['1', '2', '3'], [bookSchema], {
+        const result = denormalize([1, 2, 3], [bookSchema], {
           books,
           authors: users,
         });
@@ -528,8 +528,9 @@ describe('api.md examples', () => {
 
       // NormalizedEntity shows the normalized version where nested entities become IDs
       expectTypeOf<NormalizedEntity<typeof articleSchema.schema>>().toMatchTypeOf<{
-        author?: string;
-        comments?: string[];
+        id: string | number;
+        author?: string | number;
+        comments?: (string | number)[];
       }>();
 
       // Runtime test

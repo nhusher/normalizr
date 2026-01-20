@@ -331,7 +331,7 @@ denormalize([1, 2, 3], [bookSchema], {
   {
     id: '3',
     name: 'Book 3',
-    author: { id: '3', name: 'Unknown', requestState: 'NONE' },
+    author: { id: 3, name: 'Unknown', requestState: 'NONE' },
   },
 ];
 ```

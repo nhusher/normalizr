@@ -5,7 +5,15 @@ describe(`${schema.Array.name} normalization`, () => {
   describe('Object', () => {
     test(`normalizes plain arrays as shorthand for ${schema.Array.name}`, () => {
       const userSchema = new schema.Entity('user');
-      expect(normalize([{ id: 1 }, { id: 2 }], [userSchema])).toMatchSnapshot();
+      expect(normalize([{ id: 1 }, { id: 2 }], [userSchema])).toEqual({
+        entities: {
+          user: {
+            1: { id: 1 },
+            2: { id: 2 },
+          },
+        },
+        result: [1, 2],
+      });
     });
 
     test('throws an error if created with more than one schema', () => {
@@ -33,12 +41,26 @@ describe(`${schema.Array.name} normalization`, () => {
           },
           parentEntity,
         ),
-      ).toMatchSnapshot();
-    });
-
-    test('normalizes Objects using their values', () => {
-      const userSchema = new schema.Entity('user');
-      expect(normalize({ foo: { id: 1 }, bar: { id: 2 } }, [userSchema])).toMatchSnapshot();
+      ).toEqual({
+        entities: {
+          children: {
+            4: {
+              content: 'child',
+              id: 4,
+              parentId: 1,
+              parentKey: 'children',
+            },
+          },
+          parents: {
+            1: {
+              children: [4],
+              content: 'parent',
+              id: 1,
+            },
+          },
+        },
+        result: 1,
+      });
     });
   });
 
@@ -46,7 +68,15 @@ describe(`${schema.Array.name} normalization`, () => {
     test('normalizes a single entity', () => {
       const cats = new schema.Entity('cats');
       const listSchema = new schema.Array(cats);
-      expect(normalize([{ id: 1 }, { id: 2 }], listSchema)).toMatchSnapshot();
+      expect(normalize([{ id: 1 }, { id: 2 }], listSchema)).toEqual({
+        entities: {
+          cats: {
+            1: { id: 1 },
+            2: { id: 2 },
+          },
+        },
+        result: [1, 2],
+      });
     });
 
     test('normalizes multiple entities', () => {
@@ -71,20 +101,51 @@ describe(`${schema.Array.name} normalization`, () => {
           ],
           listSchema,
         ),
-      ).toMatchSnapshot();
-      expect(inferSchemaFn.mock.calls).toMatchSnapshot();
+      ).toEqual({
+        entities: {
+          cats: {
+            123: { id: '123', type: 'cats' },
+            456: { id: '456', type: 'cats' },
+          },
+          person: {
+            123: { id: '123', type: 'people' },
+          },
+        },
+        result: [
+          { id: '123', schema: 'cats' },
+          { id: '123', schema: 'people' },
+          { id: '789', name: 'fido' },
+          { id: '456', schema: 'cats' },
+        ],
+      });
+      expect(inferSchemaFn).toHaveBeenCalledTimes(7);
     });
 
     test('normalizes Objects using their values', () => {
       const userSchema = new schema.Entity('user');
       const users = new schema.Array(userSchema);
-      expect(normalize({ foo: { id: 1 }, bar: { id: 2 } }, users)).toMatchSnapshot();
+      expect(normalize({ foo: { id: 1 }, bar: { id: 2 } }, users)).toEqual({
+        entities: {
+          user: {
+            1: { id: 1 },
+            2: { id: 2 },
+          },
+        },
+        result: [1, 2],
+      });
     });
 
     test('filters out undefined and null normalized values', () => {
       const userSchema = new schema.Entity('user');
       const users = new schema.Array(userSchema);
-      expect(normalize([undefined, { id: 123 }, null], users)).toMatchSnapshot();
+      expect(normalize([undefined, { id: 123 }, null], users)).toEqual({
+        entities: {
+          user: {
+            123: { id: 123 },
+          },
+        },
+        result: [123],
+      });
     });
   });
 });
@@ -99,7 +160,10 @@ describe(`${schema.Array.name} denormalization`, () => {
           2: { id: 2, name: 'Jake' },
         },
       };
-      expect(denormalize([1, 2], [cats], entities)).toMatchSnapshot();
+      expect(denormalize(['1', '2'], [cats], entities)).toEqual([
+        { id: 1, name: 'Milo' },
+        { id: 2, name: 'Jake' },
+      ]);
     });
 
     test('returns the input value if is not an array', () => {
@@ -114,7 +178,10 @@ describe(`${schema.Array.name} denormalization`, () => {
         },
       };
 
-      expect(denormalize('123', taco, entities)).toMatchSnapshot();
+      expect(denormalize('123', taco, entities)).toEqual({
+        fillings: null,
+        id: '123',
+      });
     });
   });
 
@@ -128,7 +195,10 @@ describe(`${schema.Array.name} denormalization`, () => {
         },
       };
       const catList = new schema.Array(cats);
-      expect(denormalize([1, 2], catList, entities)).toMatchSnapshot();
+      expect(denormalize([1, 2], catList, entities)).toEqual([
+        { id: 1, name: 'Milo' },
+        { id: 2, name: 'Jake' },
+      ]);
     });
 
     test('denormalizes multiple entities', () => {
@@ -169,7 +239,12 @@ describe(`${schema.Array.name} denormalization`, () => {
         { id: '456', schema: 'cats' },
       ];
 
-      expect(denormalize(input, listSchema, entities)).toMatchSnapshot();
+      expect(denormalize(input, listSchema, entities)).toEqual([
+        { id: '123', type: 'cats' },
+        { id: '123', type: 'people' },
+        { id: '789' },
+        { id: '456', type: 'cats' },
+      ]);
     });
 
     test('returns the input value if is not an array', () => {
@@ -185,7 +260,10 @@ describe(`${schema.Array.name} denormalization`, () => {
         },
       };
 
-      expect(denormalize('123', taco, entities)).toMatchSnapshot();
+      expect(denormalize('123', taco, entities)).toEqual({
+        fillings: {},
+        id: '123',
+      });
     });
 
     test('does not assume mapping of schema to attribute values when schemaAttribute is not set', () => {
@@ -199,7 +277,18 @@ describe(`${schema.Array.name} denormalization`, () => {
         { cat: { id: 2 }, id: 6 },
       ];
       const output = normalize(input, catList);
-      expect(output).toMatchSnapshot();
+      expect(output).toEqual({
+        entities: {
+          cats: {
+            1: { id: 1 },
+            2: { id: 2 },
+          },
+        },
+        result: [
+          { cat: 1, id: 5 },
+          { cat: 2, id: 6 },
+        ],
+      });
       expect(denormalize(output.result, catList, output.entities)).toEqual(input);
     });
   });

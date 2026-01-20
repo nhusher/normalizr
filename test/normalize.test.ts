@@ -4,12 +4,14 @@ import { denormalize, normalize, schema } from '../src/index.js';
 describe('normalize', () => {
   [42, null, undefined, '42', () => {}].forEach((input) => {
     test(`cannot normalize input that == ${input}`, () => {
+      // @ts-expect-error - testing invalid input types
       expect(() => normalize(input, new schema.Entity('test'))).toThrow();
     });
   });
 
   test('cannot normalize with null input', () => {
     const mySchema = new schema.Entity('tacos');
+    // @ts-expect-error - testing invalid input type
     expect(() => normalize(null, mySchema)).toThrow(/null/);
   });
 
@@ -24,7 +26,15 @@ describe('normalize', () => {
         ],
         [mySchema],
       ),
-    ).toMatchSnapshot();
+    ).toEqual({
+      entities: {
+        tacos: {
+          1: { id: 1, type: 'foo' },
+          2: { id: 2, type: 'bar' },
+        },
+      },
+      result: [1, 2],
+    });
   });
 
   test('normalizes entities with circular references', () => {
@@ -36,7 +46,17 @@ describe('normalize', () => {
     const input: { id: number; friends: unknown[] } = { id: 123, friends: [] };
     input.friends.push(input);
 
-    expect(normalize(input, user)).toMatchSnapshot();
+    expect(normalize(input, user)).toEqual({
+      entities: {
+        users: {
+          123: {
+            friends: [123],
+            id: 123,
+          },
+        },
+      },
+      result: 123,
+    });
   });
 
   test('normalizes nested entities', () => {
@@ -68,7 +88,37 @@ describe('normalize', () => {
         },
       ],
     };
-    expect(normalize(input, article)).toMatchSnapshot();
+    expect(normalize(input, article)).toEqual({
+      entities: {
+        articles: {
+          123: {
+            author: '8472',
+            body: 'This article is great.',
+            comments: ['comment-123-4738'],
+            id: '123',
+            title: 'A Great Article',
+          },
+        },
+        comments: {
+          'comment-123-4738': {
+            comment: 'I like it!',
+            id: 'comment-123-4738',
+            user: '10293',
+          },
+        },
+        users: {
+          10293: {
+            id: '10293',
+            name: 'Jane',
+          },
+          8472: {
+            id: '8472',
+            name: 'Paul',
+          },
+        },
+      },
+      result: '123',
+    });
   });
 
   test('does not modify the original input', () => {
@@ -87,9 +137,18 @@ describe('normalize', () => {
 
   test('ignores null values', () => {
     const myEntity = new schema.Entity('myentities');
-    expect(normalize([null], [myEntity])).toMatchSnapshot();
-    expect(normalize([undefined], [myEntity])).toMatchSnapshot();
-    expect(normalize([false], [myEntity])).toMatchSnapshot();
+    expect(normalize([null] as any, [myEntity])).toEqual({
+      entities: {},
+      result: [null],
+    });
+    expect(normalize([undefined] as any, [myEntity])).toEqual({
+      entities: {},
+      result: [undefined],
+    });
+    expect(normalize([false] as any, [myEntity])).toEqual({
+      entities: {},
+      result: [false],
+    });
   });
 
   test('can use fully custom entity classes', () => {
@@ -102,6 +161,7 @@ describe('normalize', () => {
         return entity.uuid as string;
       }
 
+      // @ts-expect-error - intentionally using non-standard return type for testing
       override normalize(
         input: Record<string, unknown>,
         parent: unknown,
@@ -123,7 +183,7 @@ describe('normalize', () => {
       }
     }
 
-    const mySchema = new MyEntity('food');
+    const mySchema = new MyEntity('food') as any;
     expect(
       normalize(
         {
@@ -133,7 +193,27 @@ describe('normalize', () => {
         },
         mySchema,
       ),
-    ).toMatchSnapshot();
+    ).toEqual({
+      entities: {
+        children: {
+          4: {
+            id: 4,
+            name: 'lettuce',
+          },
+        },
+        food: {
+          1234: {
+            children: [4],
+            name: 'tacos',
+            uuid: '1234',
+          },
+        },
+      },
+      result: {
+        schema: 'food',
+        uuid: '1234',
+      },
+    });
   });
 
   test('uses the non-normalized input when getting the ID for an entity', () => {
@@ -146,8 +226,22 @@ describe('normalize', () => {
         idAttribute: idAttributeFn,
       },
     );
-    expect(normalize({ user: { id: '456' } }, recommendation)).toMatchSnapshot();
-    expect(idAttributeFn.mock.calls).toMatchSnapshot();
+    expect(normalize({ user: { id: '456' } }, recommendation)).toEqual({
+      entities: {
+        recommendations: {
+          456: {
+            user: '456',
+          },
+        },
+        users: {
+          456: {
+            id: '456',
+          },
+        },
+      },
+      result: '456',
+    });
+    expect(idAttributeFn).toHaveBeenCalledTimes(2);
     expect(recommendation.idAttribute).toBe(idAttributeFn);
   });
 
@@ -155,7 +249,18 @@ describe('normalize', () => {
     const userEntity = new schema.Entity('users');
     const articleEntity = new schema.Entity('articles', { author: userEntity });
 
-    expect(normalize({ id: '123', title: 'normalizr is great!', author: 1 }, articleEntity)).toMatchSnapshot();
+    expect(normalize({ id: '123', title: 'normalizr is great!', author: 1 }, articleEntity)).toEqual({
+      entities: {
+        articles: {
+          123: {
+            author: 1,
+            id: '123',
+            title: 'normalizr is great!',
+          },
+        },
+      },
+      result: '123',
+    });
   });
 
   test('can normalize object without proper object prototype inheritance', () => {
@@ -201,7 +306,25 @@ describe('normalize', () => {
       },
     };
 
-    expect(normalize(input, linkablesSchema)).toMatchSnapshot();
+    expect(normalize(input, linkablesSchema)).toEqual({
+      entities: {
+        linkables: {
+          1: {
+            data: 2,
+            id: 1,
+            module_type: 'article',
+            schema_type: 'media',
+          },
+        },
+        media: {
+          2: {
+            id: 2,
+            url: 'catimage.jpg',
+          },
+        },
+      },
+      result: 1,
+    });
   });
 
   test('can normalize entity nested inside object using property from parent', () => {
@@ -214,7 +337,7 @@ describe('normalize', () => {
     };
 
     const linkablesSchema = {
-      data: (parent: { schema_type: string }) => schemaMap[parent.schema_type],
+      data: (parent: unknown) => schemaMap[(parent as { schema_type: string }).schema_type],
     };
 
     const input = {
@@ -227,13 +350,28 @@ describe('normalize', () => {
       },
     };
 
-    expect(normalize(input, linkablesSchema)).toMatchSnapshot();
+    expect(normalize(input as any, linkablesSchema)).toEqual({
+      entities: {
+        media: {
+          2: {
+            id: 2,
+            url: 'catimage.jpg',
+          },
+        },
+      },
+      result: {
+        data: 2,
+        id: 1,
+        module_type: 'article',
+        schema_type: 'media',
+      },
+    });
   });
 });
 
 describe('denormalize', () => {
   test('returns the input if undefined', () => {
-    expect(denormalize(undefined, {}, {})).toBeUndefined();
+    expect(denormalize(undefined as any, {}, {})).toBeUndefined();
   });
 
   test('denormalizes entities', () => {
@@ -244,7 +382,10 @@ describe('denormalize', () => {
         2: { id: 2, type: 'bar' },
       },
     };
-    expect(denormalize([1, 2], [mySchema], entities)).toMatchSnapshot();
+    expect(denormalize([1, 2], [mySchema], entities)).toEqual([
+      { id: 1, type: 'foo' },
+      { id: 2, type: 'bar' },
+    ]);
   });
 
   test('denormalizes nested entities', () => {
@@ -285,7 +426,25 @@ describe('denormalize', () => {
         },
       },
     };
-    expect(denormalize('123', article, entities)).toMatchSnapshot();
+    expect(denormalize('123', article, entities)).toEqual({
+      author: {
+        id: '8472',
+        name: 'Paul',
+      },
+      body: 'This article is great.',
+      comments: [
+        {
+          comment: 'I like it!',
+          id: 'comment-123-4738',
+          user: {
+            id: '10293',
+            name: 'Jane',
+          },
+        },
+      ],
+      id: '123',
+      title: 'A Great Article',
+    });
   });
 
   test('set to undefined if schema key is not in entities', () => {
@@ -312,7 +471,15 @@ describe('denormalize', () => {
         },
       },
     };
-    expect(denormalize('123', article, entities)).toMatchSnapshot();
+    expect(denormalize('123', article, entities)).toEqual({
+      author: undefined,
+      comments: [
+        {
+          user: undefined,
+        },
+      ],
+      id: '123',
+    });
   });
 
   test('does not modify the original entities', () => {
@@ -352,8 +519,8 @@ describe('denormalize', () => {
       'guests',
       {},
       {
-        idAttribute: (value: { guest_id: number }, parent: { id: string }, key: string | undefined) =>
-          `${key}-${parent.id}-${value.guest_id}`,
+        idAttribute: (value: { guest_id: number }, parent: unknown, key: string | undefined) =>
+          `${key}-${(parent as { id: string }).id}-${value.guest_id}`,
       },
     );
 
@@ -361,7 +528,20 @@ describe('denormalize', () => {
       guest: guestSchema,
     });
 
-    expect(denormalize(normalizedData.result, [patronsSchema], normalizedData.entities)).toMatchSnapshot();
+    expect(denormalize(normalizedData.result, [patronsSchema], normalizedData.entities)).toEqual([
+      {
+        guest: null,
+        id: '1',
+        name: 'Esther',
+      },
+      {
+        guest: {
+          guest_id: 1,
+        },
+        id: '2',
+        name: 'Tom',
+      },
+    ]);
   });
 
   test('denormalizes circular data with referential equality', () => {

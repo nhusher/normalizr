@@ -11,8 +11,9 @@
  *
  * Note: While IDs in your source data may be numbers, JavaScript coerces
  * all object keys to strings, so IDs in the entities store are always strings.
+ * However, we accept both string and number for convenience.
  */
-export type IdType = string;
+export type IdType = string | number;
 
 /**
  * A function that extracts a schema attribute from a value.
