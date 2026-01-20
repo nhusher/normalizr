@@ -1,6 +1,6 @@
 {
   "name": "@teslanick/normalizr",
-  "version": "4.0.5",
+  "version": "4.1.0",
   "description": "Normalizes and denormalizes JSON according to schema for Redux and Flux applications",
   "bugs": {
     "url": "https://github.com/nhusher/normalizr/issues"

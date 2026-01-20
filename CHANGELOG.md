@@ -1,5 +1,19 @@
 # Changelog
 
+## v4.1.0
+
+### Changed
+
+- **Build tooling**: Updated Vite from v6 to v7 and Vitest from v2 to v4.
+- **Security**: Reduced package vulnerabilities.
+
+### Internal
+
+- Replaced snapshot tests with inline assertions.
+- Code cleanup and linting improvements.
+
+---
+
 ## v4.0.5
 
 ### Breaking Changes
