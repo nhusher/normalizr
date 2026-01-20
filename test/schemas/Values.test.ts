@@ -1,5 +1,4 @@
 import { describe, test, expect } from 'vitest';
-import { fromJS } from 'immutable';
 import { denormalize, normalize, schema } from '../../src/index.js';
 
 describe(`${schema.Values.name} normalization`, () => {
@@ -97,17 +96,6 @@ describe(`${schema.Values.name} denormalization`, () => {
         },
         valuesSchema,
         entities,
-      ),
-    ).toMatchSnapshot();
-
-    expect(
-      denormalize(
-        {
-          fido: { id: 1, schema: 'dogs' },
-          fluffy: { id: 1, schema: 'cats' },
-        },
-        valuesSchema,
-        fromJS(entities),
       ),
     ).toMatchSnapshot();
   });

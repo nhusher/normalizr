@@ -16,8 +16,6 @@ user.define({
 
 When denormalizing, circular references will maintain referential equality - the same object instance is returned for the same entity ID.
 
-**Note:** Circular references are not supported when using Immutable.js entities and will throw an error.
-
 ### How do I type my normalized data in TypeScript?
 
 Use the `.as<T>()` method to associate TypeScript interfaces with your schemas, then use the exported type utilities:
@@ -85,24 +83,6 @@ type Entities = AllEntitiesOf<typeof articleSchema>;
 ### Why are my IDs strings in the entities store?
 
 JavaScript coerces all object keys to strings. Even if your source data has numeric IDs like `{ id: 123 }`, the ID in the entities store will be the string `"123"`. This is standard JavaScript behavior and Normalizr's `IdType` is `string` to reflect this.
-
-### Can I use Normalizr with Immutable.js?
-
-Yes! Normalizr supports denormalizing from Immutable.js data structures:
-
-```ts
-import { fromJS } from 'immutable';
-import { denormalize, schema } from 'normalizr';
-
-const entities = fromJS({
-  users: { '1': { id: '1', name: 'Dan' } },
-});
-
-const user = new schema.Entity('users');
-const result = denormalize('1', user, entities);
-```
-
-Note that circular references are not supported with Immutable.js.
 
 ### How do I normalize data with dynamic schemas?
 

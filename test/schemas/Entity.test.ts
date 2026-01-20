@@ -1,6 +1,5 @@
 import { describe, test, expect } from 'vitest';
 import { denormalize, normalize, schema } from '../../src/index.js';
-import { fromJS, Record as ImmutableRecord } from 'immutable';
 
 const values = <T>(obj: Record<string, T>): T[] => Object.keys(obj).map((key) => obj[key]);
 
@@ -150,7 +149,6 @@ describe(`${schema.Entity.name} denormalization`, () => {
       },
     };
     expect(denormalize(1, mySchema, entities)).toMatchSnapshot();
-    expect(denormalize(1, mySchema, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
   });
 
   test('denormalizes deep entities', () => {
@@ -170,10 +168,7 @@ describe(`${schema.Entity.name} denormalization`, () => {
     };
 
     expect(denormalize(1, menuSchema, entities)).toMatchSnapshot();
-    expect(denormalize(1, menuSchema, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
-
     expect(denormalize(2, menuSchema, entities)).toMatchSnapshot();
-    expect(denormalize(2, menuSchema, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
   });
 
   test('denormalizes to undefined for missing data', () => {
@@ -192,48 +187,7 @@ describe(`${schema.Entity.name} denormalization`, () => {
     };
 
     expect(denormalize(1, menuSchema, entities)).toMatchSnapshot();
-    expect(denormalize(1, menuSchema, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
-
     expect(denormalize(2, menuSchema, entities)).toMatchSnapshot();
-    expect(denormalize(2, menuSchema, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
-  });
-
-  test('denormalizes deep entities with records', () => {
-    const foodSchema = new schema.Entity('foods');
-    const menuSchema = new schema.Entity('menus', {
-      food: foodSchema,
-    });
-
-    const Food = ImmutableRecord({ id: null as number | null });
-    const Menu = ImmutableRecord({ id: null as number | null, food: null as number | null });
-
-    const entities = {
-      menus: {
-        1: new Menu({ id: 1, food: 1 }),
-        2: new Menu({ id: 2 }),
-      },
-      foods: {
-        1: new Food({ id: 1 }),
-      },
-    };
-
-    expect(
-      denormalize(
-        1,
-        menuSchema,
-        entities as unknown as { menus: Record<string, unknown>; foods: Record<string, unknown> },
-      ),
-    ).toMatchSnapshot();
-    expect(denormalize(1, menuSchema, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
-
-    expect(
-      denormalize(
-        2,
-        menuSchema,
-        entities as unknown as { menus: Record<string, unknown>; foods: Record<string, unknown> },
-      ),
-    ).toMatchSnapshot();
-    expect(denormalize(2, menuSchema, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
   });
 
   test('can denormalize already partially denormalized data', () => {
@@ -252,7 +206,6 @@ describe(`${schema.Entity.name} denormalization`, () => {
     };
 
     expect(denormalize(1, menuSchema, entities)).toMatchSnapshot();
-    expect(denormalize(1, menuSchema, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
   });
 
   test('denormalizes recursive dependencies', () => {
@@ -285,10 +238,7 @@ describe(`${schema.Entity.name} denormalization`, () => {
       },
     };
     expect(denormalize('123', report, entities)).toMatchSnapshot();
-    expect(denormalize('123', report, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
-
     expect(denormalize('456', user, entities)).toMatchSnapshot();
-    expect(denormalize('456', user, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
   });
 
   test('denormalizes entities with referential equality', () => {

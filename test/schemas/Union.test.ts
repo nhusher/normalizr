@@ -1,5 +1,4 @@
 import { describe, test, expect } from 'vitest';
-import { fromJS } from 'immutable';
 import { denormalize, normalize, schema } from '../../src/index.js';
 
 describe(`${schema.Union.name} normalization`, () => {
@@ -64,10 +63,7 @@ describe(`${schema.Union.name} denormalization`, () => {
     );
 
     expect(denormalize({ id: 1, schema: 'users' }, union, entities)).toMatchSnapshot();
-    expect(denormalize(fromJS({ id: 1, schema: 'users' }), union, fromJS(entities))).toMatchSnapshot();
-
     expect(denormalize({ id: 2, schema: 'groups' }, union, entities)).toMatchSnapshot();
-    expect(denormalize(fromJS({ id: 2, schema: 'groups' }), union, fromJS(entities))).toMatchSnapshot();
   });
 
   test('denormalizes an array of multiple entities using a function to infer the schemaAttribute', () => {
@@ -82,10 +78,7 @@ describe(`${schema.Union.name} denormalization`, () => {
     );
 
     expect(denormalize({ id: 1, schema: 'users' }, union, entities)).toMatchSnapshot();
-    expect(denormalize(fromJS({ id: 1, schema: 'users' }), union, fromJS(entities))).toMatchSnapshot();
-
     expect(denormalize({ id: 2, schema: 'groups' }, union, entities)).toMatchSnapshot();
-    expect(denormalize(fromJS({ id: 2, schema: 'groups' }), union, fromJS(entities))).toMatchSnapshot();
   });
 
   test('returns the original value no schema is given', () => {
@@ -100,6 +93,5 @@ describe(`${schema.Union.name} denormalization`, () => {
     );
 
     expect(denormalize({ id: 1 }, union, entities)).toMatchSnapshot();
-    expect(denormalize(fromJS({ id: 1 }), union, fromJS(entities))).toMatchSnapshot();
   });
 });

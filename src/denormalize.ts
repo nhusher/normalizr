@@ -1,7 +1,6 @@
 import EntitySchema from './schemas/Entity.js';
 import * as ArrayUtils from './schemas/Array.js';
 import * as ObjectUtils from './schemas/Object.js';
-import { isImmutable } from './utils/immutable.js';
 import { hasOwn } from './utils/hasOwn.js';
 import type {
   Schema,
@@ -67,13 +66,7 @@ function unvisitEntity(
 
   // Check for circular reference
   if (inProgress.has(cacheKey)) {
-    if (isImmutable(entity)) {
-      throw new Error(
-        `Circular reference detected for Immutable.js entity "${schema.key}" with ID "${id}". ` +
-          `Circular references are not supported with Immutable.js.`,
-      );
-    }
-    // For plain objects, return the cached (in-progress) copy.
+    // Return the cached (in-progress) copy.
     // It will be fully populated by the time the outer denormalize completes
     // because Entity.denormalize mutates in place.
     return cache[schema.key][id];
@@ -88,17 +81,14 @@ function unvisitEntity(
   inProgress.add(cacheKey);
 
   // Create a shallow copy to avoid mutating the original entities store.
-  // For Immutable.js objects, we skip the copy since they're immutable anyway.
-  const entityCopy = isImmutable(entity) ? entity : { ...entity };
+  const entityCopy = { ...entity };
 
-  // Store the copy in the cache BEFORE denormalizing. For plain objects,
-  // this ensures that circular references will find this same object,
-  // which will be mutated in place during denormalization.
+  // Store the copy in the cache BEFORE denormalizing. This ensures that
+  // circular references will find this same object, which will be mutated
+  // in place during denormalization.
   cache[schema.key][id] = entityCopy;
 
-  // Denormalize the entity. For plain objects, this mutates entityCopy
-  // in place. For Immutable.js, this returns a new object, which is why
-  // we throw on circular references above.
+  // Denormalize the entity. This mutates entityCopy in place.
   cache[schema.key][id] = schema.denormalize(entityCopy, unvisit);
 
   // Mark as complete
@@ -114,22 +104,12 @@ function unvisitEntity(
  * @returns A function that retrieves entities by ID and schema
  */
 function getEntities(entities: EntitiesMap): GetEntityFn {
-  const isImmutableEntities = isImmutable(entities);
-
   return (entityOrId: IdType | Record<string, unknown>, schema: EntitySchemaInterface) => {
     const schemaKey = schema.key;
 
     // If already an object, return as-is (partially denormalized)
     if (typeof entityOrId === 'object') {
       return entityOrId;
-    }
-
-    if (isImmutableEntities) {
-      // Cast justified: isImmutable check confirms this has Immutable.js getIn method
-      return (entities as unknown as { getIn(path: string[]): Record<string, unknown> | undefined }).getIn([
-        schemaKey,
-        entityOrId.toString(),
-      ]);
     }
 
     // Use hasOwn to avoid prototype pollution (e.g., id = "constructor")

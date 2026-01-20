@@ -9,16 +9,12 @@ exports[`EntitySchema denormalization > can denormalize already partially denorm
 }
 `;
 
-exports[`EntitySchema denormalization > can denormalize already partially denormalized data 2`] = `undefined`;
-
 exports[`EntitySchema denormalization > denormalizes an entity 1`] = `
 {
   "id": 1,
   "type": "foo",
 }
 `;
-
-exports[`EntitySchema denormalization > denormalizes an entity 2`] = `undefined`;
 
 exports[`EntitySchema denormalization > denormalizes deep entities 1`] = `
 {
@@ -29,39 +25,11 @@ exports[`EntitySchema denormalization > denormalizes deep entities 1`] = `
 }
 `;
 
-exports[`EntitySchema denormalization > denormalizes deep entities 2`] = `undefined`;
-
-exports[`EntitySchema denormalization > denormalizes deep entities 3`] = `
+exports[`EntitySchema denormalization > denormalizes deep entities 2`] = `
 {
   "id": 2,
 }
 `;
-
-exports[`EntitySchema denormalization > denormalizes deep entities 4`] = `undefined`;
-
-exports[`EntitySchema denormalization > denormalizes deep entities with records 1`] = `
-{
-  "__ownerID": undefined,
-  "_values": Immutable.List [
-    1,
-    1,
-  ],
-}
-`;
-
-exports[`EntitySchema denormalization > denormalizes deep entities with records 2`] = `undefined`;
-
-exports[`EntitySchema denormalization > denormalizes deep entities with records 3`] = `
-{
-  "__ownerID": undefined,
-  "_values": Immutable.List [
-    2,
-    undefined,
-  ],
-}
-`;
-
-exports[`EntitySchema denormalization > denormalizes deep entities with records 4`] = `undefined`;
 
 exports[`EntitySchema denormalization > denormalizes recursive dependencies 1`] = `
 {
@@ -84,9 +52,7 @@ exports[`EntitySchema denormalization > denormalizes recursive dependencies 1`] 
 }
 `;
 
-exports[`EntitySchema denormalization > denormalizes recursive dependencies 2`] = `undefined`;
-
-exports[`EntitySchema denormalization > denormalizes recursive dependencies 3`] = `
+exports[`EntitySchema denormalization > denormalizes recursive dependencies 2`] = `
 {
   "id": "456",
   "reports": [
@@ -101,8 +67,6 @@ exports[`EntitySchema denormalization > denormalizes recursive dependencies 3`] 
 }
 `;
 
-exports[`EntitySchema denormalization > denormalizes recursive dependencies 4`] = `undefined`;
-
 exports[`EntitySchema denormalization > denormalizes to undefined for missing data 1`] = `
 {
   "food": undefined,
@@ -111,10 +75,6 @@ exports[`EntitySchema denormalization > denormalizes to undefined for missing da
 `;
 
 exports[`EntitySchema denormalization > denormalizes to undefined for missing data 2`] = `undefined`;
-
-exports[`EntitySchema denormalization > denormalizes to undefined for missing data 3`] = `undefined`;
-
-exports[`EntitySchema denormalization > denormalizes to undefined for missing data 4`] = `undefined`;
 
 exports[`EntitySchema normalization > idAttribute > can build the entity's ID from the parent object 1`] = `
 {

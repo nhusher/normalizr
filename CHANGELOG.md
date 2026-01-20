@@ -1,5 +1,13 @@
 # Changelog
 
+## v4.0.5
+
+### Breaking Changes
+
+- **Removed Immutable.js support**: Support for Immutable.js data structures has been removed. If you were using `fromJS()` with `denormalize()`, you will need to convert your Immutable.js data to plain JavaScript objects first.
+
+---
+
 ## v4.0.4
 
 ### Added
@@ -28,7 +36,6 @@ Complete TypeScript rewrite with improved type inference and modern tooling.
 
 - **TypeScript rewrite**: The entire library has been rewritten in TypeScript. While the API remains backward compatible, some edge cases may behave differently.
 - **IdType is now `string`**: Entity IDs are always strings in the normalized store (JavaScript coerces object keys to strings). If your code relied on numeric IDs in the entities store, you may need to update it.
-- **Immutable.js circular references**: Circular references with Immutable.js data structures now throw an error instead of silently producing incorrect results.
 
 ### Added
 

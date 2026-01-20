@@ -58,9 +58,6 @@ export { default as UnionSchema } from './schemas/Union.js';
 export { default as ValuesSchema } from './schemas/Values.js';
 export { default as PolymorphicSchema } from './schemas/Polymorphic.js';
 
-// Export utility functions
-export { isImmutable, denormalizeImmutable } from './utils/immutable.js';
-
 // Export types for consumers
 export type {
   // Core types

@@ -13,13 +13,6 @@ exports[`ValuesSchema denormalization > denormalizes the values of an object wit
 }
 `;
 
-exports[`ValuesSchema denormalization > denormalizes the values of an object with the given schema 2`] = `
-{
-  "fido": undefined,
-  "fluffy": undefined,
-}
-`;
-
 exports[`ValuesSchema normalization > can use a function to determine the schema when normalizing 1`] = `
 {
   "entities": {

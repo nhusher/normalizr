@@ -1,5 +1,4 @@
 import { describe, test, expect, vi } from 'vitest';
-import { fromJS } from 'immutable';
 import { denormalize, normalize, schema } from '../../src/index.js';
 
 describe(`${schema.Array.name} normalization`, () => {
@@ -101,7 +100,6 @@ describe(`${schema.Array.name} denormalization`, () => {
         },
       };
       expect(denormalize([1, 2], [cats], entities)).toMatchSnapshot();
-      expect(denormalize([1, 2], [cats], fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
     });
 
     test('returns the input value if is not an array', () => {
@@ -117,7 +115,6 @@ describe(`${schema.Array.name} denormalization`, () => {
       };
 
       expect(denormalize('123', taco, entities)).toMatchSnapshot();
-      expect(denormalize('123', taco, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
     });
   });
 
@@ -132,7 +129,6 @@ describe(`${schema.Array.name} denormalization`, () => {
       };
       const catList = new schema.Array(cats);
       expect(denormalize([1, 2], catList, entities)).toMatchSnapshot();
-      expect(denormalize([1, 2], catList, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
     });
 
     test('denormalizes multiple entities', () => {
@@ -174,7 +170,6 @@ describe(`${schema.Array.name} denormalization`, () => {
       ];
 
       expect(denormalize(input, listSchema, entities)).toMatchSnapshot();
-      expect(denormalize(input, listSchema, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
     });
 
     test('returns the input value if is not an array', () => {
@@ -191,7 +186,6 @@ describe(`${schema.Array.name} denormalization`, () => {
       };
 
       expect(denormalize('123', taco, entities)).toMatchSnapshot();
-      expect(denormalize('123', taco, fromJS(entities) as unknown as typeof entities)).toMatchSnapshot();
     });
 
     test('does not assume mapping of schema to attribute values when schemaAttribute is not set', () => {

@@ -9,30 +9,6 @@ exports[`ObjectSchema denormalization > denormalizes an object 1`] = `
 }
 `;
 
-exports[`ObjectSchema denormalization > denormalizes an object 2`] = `
-{
-  "user": undefined,
-}
-`;
-
-exports[`ObjectSchema denormalization > denormalizes an object 3`] = `
-{
-  "__altered": false,
-  "__hash": undefined,
-  "__ownerID": undefined,
-  "_root": ArrayMapNode {
-    "entries": [
-      [
-        "user",
-        1,
-      ],
-    ],
-    "ownerID": OwnerID {},
-  },
-  "size": 1,
-}
-`;
-
 exports[`ObjectSchema denormalization > denormalizes an object that contains a property representing a an object with an id of zero 1`] = `
 {
   "user": {
@@ -42,60 +18,12 @@ exports[`ObjectSchema denormalization > denormalizes an object that contains a p
 }
 `;
 
-exports[`ObjectSchema denormalization > denormalizes an object that contains a property representing a an object with an id of zero 2`] = `
-{
-  "user": undefined,
-}
-`;
-
-exports[`ObjectSchema denormalization > denormalizes an object that contains a property representing a an object with an id of zero 3`] = `
-{
-  "__altered": false,
-  "__hash": undefined,
-  "__ownerID": undefined,
-  "_root": ArrayMapNode {
-    "entries": [
-      [
-        "user",
-        0,
-      ],
-    ],
-    "ownerID": OwnerID {},
-  },
-  "size": 1,
-}
-`;
-
 exports[`ObjectSchema denormalization > denormalizes plain object shorthand 1`] = `
 {
   "user": {
     "id": 1,
     "name": "Jane",
   },
-}
-`;
-
-exports[`ObjectSchema denormalization > denormalizes plain object shorthand 2`] = `
-{
-  "user": undefined,
-}
-`;
-
-exports[`ObjectSchema denormalization > denormalizes plain object shorthand 3`] = `
-{
-  "__altered": false,
-  "__hash": undefined,
-  "__ownerID": undefined,
-  "_root": ArrayMapNode {
-    "entries": [
-      [
-        "user",
-        1,
-      ],
-    ],
-    "ownerID": OwnerID {},
-  },
-  "size": 1,
 }
 `;
 

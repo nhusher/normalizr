@@ -1,4 +1,3 @@
-import { isImmutable, denormalizeImmutable } from '../utils/immutable.js';
 import { hasOwn } from '../utils/hasOwn.js';
 import type {
   Schema,
@@ -22,10 +21,6 @@ import type {
  */
 function getDefaultGetId<T>(idAttribute: string): (input: T, parent: unknown, key: string | undefined) => IdType {
   return (input: T) => {
-    if (isImmutable(input)) {
-      // Cast justified: isImmutable() confirms this has Immutable.js's .get() method
-      return (input as unknown as { get(key: string): IdType }).get(idAttribute);
-    }
     // Cast justified: T is constrained to object types, accessing property by string key
     return (input as Record<string, IdType>)[idAttribute];
   };
@@ -247,19 +242,12 @@ export class EntitySchema<
   /**
    * Denormalize an entity, replacing IDs with full nested objects.
    *
-   * **Warning**: For plain objects, this method mutates the input `entity`
-   * directly rather than creating a copy. Callers should pass a copy if
-   * the original must be preserved.
+   * **Warning**: This method mutates the input `entity` directly rather than
+   * creating a copy. Callers should pass a copy if the original must be preserved.
    */
   denormalize(entity: unknown, unvisit: UnvisitFn): TData {
     // Cast justified: denormalize receives entity data from the entities store
     const typedEntity = entity as Record<string, unknown>;
-
-    if (isImmutable(typedEntity)) {
-      // Cast justified: TDefinition extends SchemaDefinition which is Record<string, Schema>
-      // Return cast justified: denormalizeImmutable returns the same structure as TData
-      return denormalizeImmutable(this.schema as Record<string, Schema>, typedEntity, unvisit) as TData;
-    }
 
     // Visit nested schemas and replace IDs with denormalized entities
     Object.keys(this.schema).forEach((schemaKey) => {

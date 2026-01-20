@@ -1,4 +1,3 @@
-import { isImmutable, denormalizeImmutable } from '../utils/immutable.js';
 import type {
   Schema,
   SchemaDefinition,
@@ -61,11 +60,6 @@ export function normalize(
  * @returns The denormalized object
  */
 export function denormalize(schema: SchemaDefinition, input: unknown, unvisit: UnvisitFn): unknown {
-  if (isImmutable(input)) {
-    // Cast justified: SchemaDefinition is Record<string, Schema>
-    return denormalizeImmutable(schema as Record<string, Schema>, input, unvisit);
-  }
-
   // Cast justified: denormalize() receives objects from the normalized store
   const typedInput = input as Record<string, unknown>;
   const object: Record<string, unknown> = { ...typedInput };

@@ -1,4 +1,3 @@
-import { isImmutable } from '../utils/immutable.js';
 import type {
   Schema,
   SchemaAttribute,
@@ -140,21 +139,15 @@ export class PolymorphicSchema<TDefinition extends Schema = Schema> {
    * @returns The denormalized value
    */
   denormalizeValue(value: unknown, unvisit: UnvisitFn): unknown {
-    // Cast justified: polymorphic normalized values have { id, schema } shape or are Immutable
-    const schemaKey = isImmutable(value)
-      ? (value as { get(key: string): string }).get('schema')
-      : (value as { schema?: string })?.schema;
+    // Cast justified: polymorphic normalized values have { id, schema } shape
+    const schemaKey = (value as { schema?: string })?.schema;
 
     if (!this.isSingleSchema && !schemaKey) {
       return value;
     }
 
     // Cast justified: same shape as above - extracting id from normalized polymorphic reference
-    const id = this.isSingleSchema
-      ? undefined
-      : isImmutable(value)
-        ? (value as { get(key: string): unknown }).get('id')
-        : (value as { id?: unknown })?.id;
+    const id = this.isSingleSchema ? undefined : (value as { id?: unknown })?.id;
 
     // Cast justified: isSingleSchema check determines which branch of TDefinition we have
     const schema = this.isSingleSchema ? (this.schema as Schema) : (this.schema as Record<string, Schema>)[schemaKey!];

@@ -44,7 +44,7 @@ const normalizedData = normalize(myData, mySchema);
 
 ## `denormalize(input, schema, entities, options?)`
 
-Denormalizes an input based on schema and provided entities from a plain object or Immutable data. The reverse of `normalize`.
+Denormalizes an input based on schema and provided entities from a plain object. The reverse of `normalize`.
 
 _Special Note:_ Be careful with denormalization. Prematurely reverting your data to large, nested objects could cause performance impacts in React (and other) applications.
 
@@ -52,7 +52,7 @@ If your schema and data have recursive references, only the first instance of an
 
 - `input`: **required** The normalized result that should be _de-normalized_. Usually the same value that was given in the `result` key of the output of `normalize`.
 - `schema`: **required** A schema definition that was used to get the value for `input`.
-- `entities`: **required** An object, keyed by entity schema names that may appear in the denormalized output. Also accepts an object with Immutable data.
+- `entities`: **required** An object, keyed by entity schema names that may appear in the denormalized output.
 - `options`: _optional_ Configuration options
   - `createUnvisit`: A factory function to create a custom unvisit function (advanced usage).
 
@@ -74,21 +74,6 @@ const denormalizedData = denormalize({ users: [1, 2] }, mySchema, entities);
   users: [{ id: 1 }, { id: 2 }];
 }
 ```
-
-### Immutable.js Support
-
-Denormalize works with Immutable.js data structures:
-
-```ts
-import { fromJS } from 'immutable';
-
-const entities = fromJS({
-  users: { '1': { id: 1 }, '2': { id: 2 } },
-});
-const result = denormalize({ users: [1, 2] }, mySchema, entities);
-```
-
-**Note:** Circular references are not supported with Immutable.js entities and will throw an error.
 
 ## `schema`
 
@@ -693,13 +678,13 @@ const articleSchema = new schema.Entity('articles', { author: userSchema });
 type Article = Denormalized<typeof articleSchema>;
 // { id: string; author: { id: string; ... }; ... }
 
-// With explicit types (fully typed)
+// With .as<T>() (fully typed)
 interface User {
   id: string;
   name: string;
 }
 
-const typedUserSchema = new schema.Entity<'users', User>('users');
+const typedUserSchema = new schema.Entity('users').as<User>();
 
 type TypedUser = Denormalized<typeof typedUserSchema>;
 // User (i.e., { id: string; name: string })
@@ -739,10 +724,10 @@ interface Article {
   author: User;
 }
 
-const userSchema = new schema.Entity<'users', User>('users');
-const articleSchema = new schema.Entity<'articles', Article>('articles', {
+const userSchema = new schema.Entity('users').as<User>();
+const articleSchema = new schema.Entity('articles', {
   author: userSchema,
-});
+}).as<Article>();
 
 type Entities = AllEntitiesOf<typeof articleSchema>;
 // { users: Record<string, User>; articles: Record<string, Article> }
