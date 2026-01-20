@@ -99,8 +99,8 @@ export type {
   // Type inference utilities
   Denormalized,
   Normalized,
-  EntitiesOf,
+  AllEntitiesOf,
   EntityLike,
-  InferredEntity,
   NormalizedEntity,
+  UnionToIntersection,
 } from './types.js';

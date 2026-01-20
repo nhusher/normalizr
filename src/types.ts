@@ -306,53 +306,93 @@ export interface EntityLike<TKey extends string = string, TData = unknown> {
 }
 
 /**
- * Extract the entities map type from a schema or schemas.
+ * Recursively collects all entity types from a schema tree.
  *
- * This type extracts entity types from schemas into a map structure
- * matching the `entities` output of `normalize()`.
+ * This type walks the schema and collects all entity types into a map
+ * structure matching the `entities` output of `normalize()`.
  *
- * @typeParam S - The schema(s) to extract entities from
+ * @typeParam S - The schema to extract all entities from
  *
  * @example Single entity
  * ```typescript
  * const userSchema = new schema.Entity<'users', User>('users');
  *
- * type Entities = EntitiesOf<typeof userSchema>;
+ * type Entities = AllEntitiesOf<typeof userSchema>;
  * // Result: { users: Record<string, User> }
  * ```
  *
- * @example Multiple schemas (use union for composition)
+ * @example Nested schema (collects all entities recursively)
  * ```typescript
- * const userSchema = new schema.Entity<'users', User>('users');
- * const articleSchema = new schema.Entity<'articles', Article>('articles');
+ * const articleSchema = new schema.Entity('articles', {
+ *   author: userSchema,
+ *   comments: [commentSchema],
+ * }).as<Article>();
  *
- * type Entities = EntitiesOf<typeof userSchema | typeof articleSchema>;
- * // Result: { users: Record<string, User> } | { articles: Record<string, Article> }
- *
- * // For intersection, compose manually:
- * type AllEntities = EntitiesOf<typeof userSchema> & EntitiesOf<typeof articleSchema>;
- * // Result: { users: Record<string, User>; articles: Record<string, Article> }
+ * type Entities = AllEntitiesOf<typeof articleSchema>;
+ * // Result: {
+ * //   articles: Record<string, Article>;
+ * //   users: Record<string, User>;
+ * //   comments: Record<string, Comment>;
+ * // }
  * ```
  *
  * @example Array and object shorthands
  * ```typescript
- * type FromArray = EntitiesOf<[typeof userSchema]>;
- * // Result: { users: Record<string, User> }
+ * type FromArray = AllEntitiesOf<[typeof articleSchema]>;
+ * // Result: { articles: ..., users: ..., comments: ... }
  *
- * type FromObject = EntitiesOf<{ user: typeof userSchema }>;
- * // Result: { users: Record<string, User> }
+ * type FromObject = AllEntitiesOf<{ article: typeof articleSchema }>;
+ * // Result: { articles: ..., users: ..., comments: ... }
  * ```
  */
-export type EntitiesOf<S> =
-  S extends EntityLike<infer TKey, infer TData>
-    ? { [K in TKey]: Record<IdType, TData> }
-    : S extends SchemaClass
-      ? {}
+export type AllEntitiesOf<S, Seen = never> = Expand<AllEntitiesOfInternal<S, Seen>>;
+
+/**
+ * Internal recursive implementation of AllEntitiesOf.
+ * @internal
+ */
+type AllEntitiesOfInternal<S, Seen = never> =
+  // Prevent infinite recursion for circular schemas
+  S extends Seen
+    ? {}
+    : S extends EntityLike<infer TKey, infer TData>
+      ? { [K in TKey]: Record<IdType, TData> } & AllEntitiesOfInternal<GetSchemaDefinition<S>, Seen | S>
       : S extends readonly [infer Inner]
-        ? EntitiesOf<Inner>
-        : S extends Record<string, infer V>
-          ? EntitiesOf<V>
-          : {};
+        ? AllEntitiesOfInternal<Inner, Seen>
+        : S extends SchemaClass
+          ? {} // Non-entity schema classes don't contribute entities
+          : // Handle schema functions by extracting their return type.
+            // This works when the function has a specific inferred return type,
+            // but not when explicitly typed as SchemaFunction (return type: Schema).
+            // We use UnionToIntersection because when the return type is a union
+            // (e.g., schemaA | schemaB), we want to collect entities from ALL branches.
+            // We bail out if the return type includes SchemaFunction (indicating it's
+            // the broad Schema type, which would cause infinite recursion).
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            S extends (arg: any) => infer R
+            ? SchemaFunction extends R
+              ? {} // Return type is too broad (includes SchemaFunction), bail out
+              : UnionToIntersection<AllEntitiesOfInternal<R, Seen | S>>
+            : S extends Record<string, unknown>
+              ? // Guard against index signature types (like { [key: string]: Schema }) which cause deep recursion
+                string extends keyof S
+                ? {}
+                : UnionToIntersection<{ [K in keyof S]: AllEntitiesOfInternal<S[K], Seen> }[keyof S]>
+              : {};
+
+/**
+ * Helper to extract schema definition from an entity schema.
+ * @internal
+ */
+type GetSchemaDefinition<S> = S extends { schema: infer D } ? D : {};
+
+/**
+ * Converts a union type to an intersection type.
+ * @internal
+ */
+export type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (k: infer I) => void
+  ? I
+  : never;
 
 // ============================================================================
 // Internal Type Utilities
@@ -374,43 +414,6 @@ type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
 // ============================================================================
 // Utility Types for Schema Construction
 // ============================================================================
-
-/**
- * Constructs a denormalized entity type from a schema definition.
- *
- * Use this when you want TypeScript to infer an entity's type from its
- * schema definition, rather than declaring an explicit interface. This is
- * useful for rapid prototyping or when the schema is the source of truth.
- *
- * @typeParam TDefinition - The schema definition mapping nested field names to schemas
- *
- * @example Inferring entity type from schema
- * ```typescript
- * const userSchema = new schema.Entity('users');
- * const articleSchema = new schema.Entity('articles', {
- *   author: userSchema,
- *   reviewers: [userSchema],
- * });
- *
- * // Instead of manually declaring:
- * // interface Article { id: string; author: User; reviewers: User[]; title?: string; }
- *
- * // Let TypeScript infer it:
- * type Article = InferredEntity<typeof articleSchema.schema>;
- * // Result: { id: string; author?: User; reviewers?: User[]; }
- * ```
- *
- * @remarks
- * - All schema-defined fields are optional (entities may be partially loaded)
- * - Only includes fields from the schema definition; for additional fields, declare an explicit interface
- */
-export type InferredEntity<TDefinition extends SchemaDefinition = Record<string, never>> = Expand<
-  {
-    id: IdType;
-  } & {
-    [K in keyof TDefinition]?: Denormalized<TDefinition[K]>;
-  }
->;
 
 /**
  * Constructs a normalized entity type from a schema definition.

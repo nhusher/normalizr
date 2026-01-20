@@ -109,34 +109,51 @@ const user = new schema.Entity('users');
 user.define({ friends: [user] });
 
 // Circular data: user references themselves
-const input = { id: '1', name: 'Alice', friends: [] as unknown[] };
+const input = { id: '1', name: 'Alice', friends: [] };
 input.friends.push(input);
 
 const { result, entities } = normalize(input, user);
 // entities.users['1'] = { id: '1', name: 'Alice', friends: ['1'] }
 
-const output = denormalize(result, user, entities) as { friends: unknown[] };
+const output = denormalize(result, user, entities);
 // Referential equality is preserved:
 output === output.friends[0]; // true
 ```
 
 ## TypeScript
 
-Normalizr is written in TypeScript and includes comprehensive type definitions. Type utilities like `Denormalized<S>`, `Normalized<S>`, and `EntitiesOf<S>` help you infer types from your schemas.
+Normalizr is written in TypeScript and includes comprehensive type definitions. Type utilities like `Denormalized<S>`, `Normalized<S>`, and `AllEntitiesOf<S>` help you infer types from your schemas.
+
+### The `.as<T>()` Method (Recommended)
+
+Use `.as<T>()` to associate a TypeScript interface with your schema while preserving full type inference for nested schemas:
 
 ```ts
-import { normalize, schema, Denormalized, EntitiesOf } from 'normalizr';
+import { normalize, schema, Denormalized, AllEntitiesOf } from 'normalizr';
 
 interface User {
   id: string;
   name: string;
 }
 
-const userSchema = new schema.Entity<'users', User>('users');
+interface Article {
+  id: string;
+  title: string;
+  author: User;
+}
 
-type Entities = EntitiesOf<typeof userSchema>;
-// { users: Record<string, User> }
+// Create schemas with .as<T>() for full type inference
+const userSchema = new schema.Entity('users').as<User>();
+const articleSchema = new schema.Entity('articles', {
+  author: userSchema,
+}).as<Article>();
+
+// Type utilities work with full nested type information
+type Entities = AllEntitiesOf<typeof articleSchema>;
+// { users: Record<string, User>; articles: Record<string, Article> }
 ```
+
+> **Why `.as<T>()`?** TypeScript has a [limitation with partial type parameter inference](https://github.com/microsoft/TypeScript/issues/26242). When you write `new schema.Entity<'users', User>('users', { ... })`, TypeScript uses the default `{}` for the unspecified `TDefinition` parameter instead of inferring it from the constructor argument. This breaks type inference for nested schemas. The `.as<T>()` method sidesteps this by letting TypeScript infer all parameters first, then narrowing the data type.
 
 ## Build Files
 

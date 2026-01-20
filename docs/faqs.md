@@ -20,22 +20,66 @@ When denormalizing, circular references will maintain referential equality - the
 
 ### How do I type my normalized data in TypeScript?
 
-Use the exported type utilities:
+Use the `.as<T>()` method to associate TypeScript interfaces with your schemas, then use the exported type utilities:
 
 ```ts
-import { normalize, schema, Denormalized, EntitiesOf } from 'normalizr';
+import { normalize, schema, Denormalized, AllEntitiesOf } from 'normalizr';
 
-const userSchema = new schema.Entity('users');
-const articleSchema = new schema.Entity('articles', { author: userSchema });
+interface User {
+  id: string;
+  name: string;
+}
+
+interface Article {
+  id: string;
+  title: string;
+  author: User;
+}
+
+// Use .as<T>() to associate interfaces with schemas
+const userSchema = new schema.Entity('users').as<User>();
+const articleSchema = new schema.Entity('articles', {
+  author: userSchema,
+}).as<Article>();
 
 // Get the denormalized type
-type Article = Denormalized<typeof articleSchema>;
+type ArticleType = Denormalized<typeof articleSchema>;
+// Article
 
-// Get the entities store type
-type Entities = EntitiesOf<typeof articleSchema>;
+// Get the entities store type (includes all nested entity types)
+type Entities = AllEntitiesOf<typeof articleSchema>;
+// { users: Record<string, User>; articles: Record<string, Article> }
 
 const { result, entities } = normalize(data, articleSchema);
 // entities is typed as Entities
+```
+
+### Why should I use `.as<T>()` instead of `new schema.Entity<'key', Type>(...)`?
+
+TypeScript has a [limitation with partial type parameter inference](https://github.com/microsoft/TypeScript/issues/26242). When you provide explicit type parameters like `new schema.Entity<'articles', Article>('articles', { author: userSchema })`, TypeScript uses default values for any parameters you don't specify—including the schema definition type.
+
+This means nested schema types are lost:
+
+```ts
+// ❌ TDefinition defaults to {} instead of being inferred
+const articleSchema = new schema.Entity<'articles', Article>('articles', {
+  author: userSchema,
+});
+
+type Entities = AllEntitiesOf<typeof articleSchema>;
+// Only { articles: Record<string, Article> } - users is missing!
+```
+
+The `.as<T>()` method avoids this by letting TypeScript infer all parameters from constructor arguments first, then narrowing the data type:
+
+```ts
+// ✅ Full type inference preserved
+const articleSchema = new schema.Entity('articles', {
+  author: userSchema,
+}).as<Article>();
+
+type Entities = AllEntitiesOf<typeof articleSchema>;
+// { articles: Record<string, Article>; users: Record<string, User> }
 ```
 
 ### Why are my IDs strings in the entities store?

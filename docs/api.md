@@ -208,6 +208,7 @@ const normalizedData = normalize(data, myArray);
 
 - `define(definition)`: When used, the `definition` passed in will be merged with the original definition passed to the `Entity` constructor. This method tends to be useful for creating circular references in schema.
 - `validate(input)`: Validates that the input is suitable for normalization. Override this method to implement custom validation. Throws an error if validation fails.
+- `as<T>()`: Narrows the entity's data type for stronger typing. Returns the same schema instance with a narrowed TypeScript type. See [The `.as<T>()` Method](#the-ast-method) below.
 
 #### Instance Attributes
 
@@ -402,6 +403,48 @@ normalize(data, [feedItemSchema]);
 }
 ```
 
+#### TypeScript Considerations
+
+For `AllEntitiesOf<S>` to correctly infer entities from dynamic schema functions, TypeScript must be able to infer a specific return type. Follow these guidelines:
+
+1. **Use `unknown` for the parameter type** - The function must accept `unknown` to be compatible with the `SchemaFunction` type:
+
+```ts
+// ✅ Correct: parameter is unknown, cast inside the function
+content: (parent: unknown) => {
+  const p = parent as { contentType: string };
+  return p.contentType === 'media' ? mediaSchema : articleSchema;
+}
+```
+
+2. **Let TypeScript infer the return type** - Don't explicitly type the function as `SchemaFunction`:
+
+```ts
+// ✅ Correct: return type is inferred as specific union
+content: (parent: unknown) => {
+  return someCondition ? mediaSchema : articleSchema;
+}
+// Inferred: (parent: unknown) => typeof mediaSchema | typeof articleSchema
+
+// ❌ Avoid: explicit SchemaFunction type loses inference
+content: ((parent) => {
+  return someCondition ? mediaSchema : articleSchema;
+}) as SchemaFunction
+// Return type is Schema (too broad for AllEntitiesOf)
+```
+
+3. **Use explicit return type annotation if needed** - If you must annotate, use a specific type:
+
+```ts
+// ✅ Correct: explicit but specific return type
+content: (parent: unknown): typeof mediaSchema | typeof articleSchema => {
+  const p = parent as { contentType: string };
+  return p.contentType === 'media' ? mediaSchema : articleSchema;
+}
+```
+
+When TypeScript can infer the specific return type, `AllEntitiesOf` will correctly collect all possible entity types from the function's return type union.
+
 ### `Object(definition)`
 
 Define a plain object mapping that has values needing to be normalized into Entities. _Note: The same behavior can be defined with shorthand syntax: `{ ... }`_
@@ -565,12 +608,12 @@ const normalizedData = normalize(data, valuesSchema);
 
 Normalizr exports several TypeScript utility types for working with normalized data.
 
-### Explicit Type Parameters
+### The `.as<T>()` Method
 
-For the best type inference, provide explicit type parameters when creating schemas:
+The recommended way to associate a TypeScript interface with your schema is using the `.as<T>()` method. This approach preserves full type inference for nested schema definitions:
 
 ```ts
-import { schema, Denormalized, EntitiesOf } from 'normalizr';
+import { schema, Denormalized, AllEntitiesOf } from 'normalizr';
 
 // Define your data types
 interface User {
@@ -584,19 +627,57 @@ interface Article {
   author: User;
 }
 
-// Create schemas with type parameters: Entity<Key, DataType>
-const userSchema = new schema.Entity<'users', User>('users');
-const articleSchema = new schema.Entity<'articles', Article>('articles', {
+// Create schemas with .as<T>() - the recommended pattern
+const userSchema = new schema.Entity('users').as<User>();
+const articleSchema = new schema.Entity('articles', {
   author: userSchema,
-});
+}).as<Article>();
 
-// Now type utilities work with full type information
+// Type utilities work with full nested type information
 type DenormalizedArticle = Denormalized<typeof articleSchema>;
-// Article (i.e., { id: string; title: string; author: User })
+// Article
 
-type Entities = EntitiesOf<typeof articleSchema>;
+type Entities = AllEntitiesOf<typeof articleSchema>;
 // { users: Record<string, User>; articles: Record<string, Article> }
 ```
+
+#### Why use `.as<T>()` instead of explicit type parameters?
+
+TypeScript has a [limitation with partial type parameter inference](https://github.com/microsoft/TypeScript/issues/26242). When you provide some type parameters explicitly, TypeScript stops inferring the rest and uses their defaults instead.
+
+```ts
+// ❌ This pattern loses nested schema type information
+const articleSchema = new schema.Entity<'articles', Article>('articles', {
+  author: userSchema,  // TDefinition defaults to {}, not inferred!
+});
+
+// The schema definition type is lost:
+type Entities = AllEntitiesOf<typeof articleSchema>;
+// { articles: Record<string, Article> }
+// Missing: users!
+```
+
+The `.as<T>()` method sidesteps this limitation by:
+1. Letting TypeScript infer all type parameters from the constructor arguments
+2. Then narrowing just the data type via `.as<T>()`
+
+```ts
+// ✅ This pattern preserves nested schema type information
+const articleSchema = new schema.Entity('articles', {
+  author: userSchema,  // TDefinition is inferred correctly
+}).as<Article>();
+
+type Entities = AllEntitiesOf<typeof articleSchema>;
+// { articles: Record<string, Article>; users: Record<string, User> }
+```
+
+#### When to use explicit type parameters
+
+Explicit type parameters like `new schema.Entity<'users', User>('users')` still work and are useful for:
+
+- Simple schemas without nested entities
+- When you don't need `AllEntitiesOf` type inference
+- Backward compatibility with existing code
 
 ### `Denormalized<S>`
 
@@ -641,12 +722,12 @@ type NormalizedUsers = Normalized<[typeof userSchema]>;
 // string[] (array of entity IDs)
 ```
 
-### `EntitiesOf<S>`
+### `AllEntitiesOf<S>`
 
-Extract the entities map type from a schema:
+Extract the entities map type from a schema, recursively collecting all nested entity types:
 
 ```ts
-import { schema, EntitiesOf } from 'normalizr';
+import { schema, AllEntitiesOf } from 'normalizr';
 
 interface User {
   id: string;
@@ -663,27 +744,8 @@ const articleSchema = new schema.Entity<'articles', Article>('articles', {
   author: userSchema,
 });
 
-type Entities = EntitiesOf<typeof articleSchema>;
+type Entities = AllEntitiesOf<typeof articleSchema>;
 // { users: Record<string, User>; articles: Record<string, Article> }
-```
-
-### `InferredEntity<TDefinition>`
-
-Infer an entity type from a schema definition. Useful when you want to derive types from the schema rather than defining them upfront:
-
-```ts
-import { schema, InferredEntity } from 'normalizr';
-
-const commentSchema = new schema.Entity('comments');
-const userSchema = new schema.Entity('users');
-
-const articleSchema = new schema.Entity('articles', {
-  author: userSchema,
-  comments: [commentSchema],
-});
-
-type Article = InferredEntity<typeof articleSchema.schema>;
-// { id: string; author?: User; comments?: Comment[] } & Record<string, unknown>
 ```
 
 ### `NormalizedEntity<TDefinition>`

@@ -11,6 +11,9 @@ import type {
   AddEntityFn,
   VisitedEntities,
   EntitySchemaInterface,
+  Denormalized,
+  Normalized,
+  AllEntitiesOf,
 } from './types.js';
 
 /**
@@ -87,9 +90,7 @@ const addEntities =
  * Takes nested data and flattens it into an entities store, with
  * references replaced by their IDs.
  *
- * @typeParam TSchema - The schema type
- * @typeParam TEntities - The entities map type (inferred)
- * @typeParam TResult - The result type (inferred)
+ * @typeParam S - The schema type
  *
  * @param input - The data to normalize (must be an object or array)
  * @param schema - The schema describing the data structure
@@ -114,9 +115,15 @@ const addEntities =
  * // }
  * ```
  */
-export function normalize<TSchema extends Schema>(
+export function normalize<S extends Schema>(
+  input: Denormalized<S>,
+  schema: S,
+): NormalizedSchema<AllEntitiesOf<S>, Normalized<S>>;
+
+// Implementation signature
+export function normalize(
   input: unknown,
-  schema: TSchema,
+  schema: Schema,
 ): NormalizedSchema<EntitiesMap, unknown> {
   if (!input || typeof input !== 'object') {
     throw new Error(

@@ -52,7 +52,7 @@ export class EntitySchema<
 
   /**
    * Phantom property for type inference. Not used at runtime.
-   * Allows EntitiesOf<S> to extract the entity data type.
+   * Allows AllEntitiesOf<S> to extract the entity data type.
    */
   readonly _entityType?: TData;
 
@@ -272,6 +272,31 @@ export class EntitySchema<
 
     // Cast justified: we've denormalized in place, structure matches TData
     return typedEntity as TData;
+  }
+
+  /**
+   * Narrows the entity's data type for stronger typing.
+   * This is a type-level operation; returns the same schema instance.
+   *
+   * Use this when you want to associate an explicit interface with an entity
+   * while still having TypeScript infer the schema definition type.
+   *
+   * @example
+   * ```typescript
+   * interface Article {
+   *   id: string;
+   *   title: string;
+   *   author: User;
+   * }
+   *
+   * const articleSchema = new schema.Entity('articles', {
+   *   author: userSchema,
+   * }).as<Article>();
+   * ```
+   */
+  as<TNewData extends object>(): EntitySchema<TKey, TNewData, TDefinition> {
+    // Cast through unknown since we're changing TData which affects private members
+    return this as unknown as EntitySchema<TKey, TNewData, TDefinition>;
   }
 }
 

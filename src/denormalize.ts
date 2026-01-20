@@ -14,6 +14,8 @@ import type {
   DenormalizeOptions,
   IdType,
   EntitySchemaInterface,
+  Denormalized,
+  Normalized,
 } from './types.js';
 
 /**
@@ -188,14 +190,13 @@ const createEagerUnvisit: CreateUnvisitFn = (_entities, getEntity) => {
  * Takes normalized data (flat entities + result) and reconstructs
  * the nested structure.
  *
- * @typeParam TSchema - The schema type
- * @typeParam TEntities - The entities map type
+ * @typeParam S - The schema type
  *
  * @param input - The normalized result (usually IDs or ID references)
  * @param schema - The schema describing the data structure
  * @param entities - The entities store from normalization
  * @param options - Optional configuration (e.g., custom unvisit for lazy denormalization)
- * @returns The denormalized data
+ * @returns The denormalized data, or undefined if the root entity is not found
  *
  * @example
  * ```typescript
@@ -221,19 +222,28 @@ const createEagerUnvisit: CreateUnvisitFn = (_entities, getEntity) => {
  * });
  * ```
  */
-export function denormalize<TSchema extends Schema, TEntities extends EntitiesMap>(
+export function denormalize<S extends Schema>(
+  input: Normalized<S>,
+  schema: S,
+  entities: object,
+  options?: DenormalizeOptions,
+): Denormalized<S> | undefined;
+
+// Implementation signature
+export function denormalize(
   input: unknown,
-  schema: TSchema,
-  entities: TEntities,
-  options?: DenormalizeOptions<TEntities>,
+  schema: Schema,
+  entities: object,
+  options?: DenormalizeOptions,
 ): unknown {
   if (typeof input === 'undefined') {
     return input;
   }
 
-  const getEntity = getEntities(entities);
+  const entitiesMap = entities as EntitiesMap;
+  const getEntity = getEntities(entitiesMap);
   const createUnvisit = options?.createUnvisit ?? createEagerUnvisit;
-  const unvisit = createUnvisit(entities, getEntity);
+  const unvisit = createUnvisit(entitiesMap, getEntity);
 
   return unvisit(input, schema);
 }
