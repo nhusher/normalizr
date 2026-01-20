@@ -174,12 +174,6 @@ TypeScript declaration files (`dist/index.d.ts`) are included for full type supp
 - [FAQs](./docs/faqs.md)
 - [Using with JSONAPI](./docs/jsonapi.md)
 
-## Examples
-
-- [Normalizing GitHub Issues](./examples/github)
-- [Relational Data](./examples/relationships)
-- [Interactive Redux](./examples/redux)
-
 ## Credits
 
 Normalizr was originally created by [Dan Abramov](http://github.com/gaearon) and inspired by a conversation with [Jing Chen](https://twitter.com/jingc). Version 3 was a complete rewrite by [Paul Armstrong](https://twitter.com/paularmstrong). Version 4 is a TypeScript rewrite by [Nicholas Husher](https://github.com/nhusher).

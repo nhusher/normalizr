@@ -17,7 +17,6 @@
 
 - Added comprehensive documentation for the `.as<T>()` method in README, API docs, and FAQs.
 - Added TypeScript considerations for dynamic schema functions.
-- Updated all examples to use the recommended `.as<T>()` pattern.
 
 ---
 
