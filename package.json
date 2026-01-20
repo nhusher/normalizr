@@ -3,11 +3,11 @@
   "version": "4.0.4",
   "description": "Normalizes and denormalizes JSON according to schema for Redux and Flux applications",
   "bugs": {
-    "url": "https://github.com/paularmstrong/normalizr/issues"
+    "url": "https://github.com/nhusher/normalizr/issues"
   },
-  "homepage": "https://github.com/paularmstrong/normalizr",
+  "homepage": "https://github.com/nhusher/normalizr",
   "repository": {
-    "url": "https://github.com/paularmstrong/normalizr.git",
+    "url": "https://github.com/nhusher/normalizr.git",
     "type": "git"
   },
   "keywords": [
@@ -62,15 +62,19 @@
   ],
   "license": "MIT",
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@types/node": "^22.10.5",
     "@typescript-eslint/eslint-plugin": "^8.19.1",
     "@typescript-eslint/parser": "^8.19.1",
     "@vitest/coverage-v8": "^2.1.9",
-    "eslint": "^9.17.0",
+    "eslint": "^9.39.2",
     "fast-check": "^4.5.3",
+    "globals": "^17.0.0",
+    "jiti": "^2.6.1",
     "prettier": "^3.4.2",
     "rimraf": "^6.0.1",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.53.1",
     "vite": "^6.0.7",
     "vite-plugin-dts": "^4.4.0",
     "vitest": "^2.1.8"

@@ -210,12 +210,7 @@ export function denormalize<S extends Schema>(
 ): Denormalized<S> | undefined;
 
 // Implementation signature
-export function denormalize(
-  input: unknown,
-  schema: Schema,
-  entities: object,
-  options?: DenormalizeOptions,
-): unknown {
+export function denormalize(input: unknown, schema: Schema, entities: object, options?: DenormalizeOptions): unknown {
   if (typeof input === 'undefined') {
     return input;
   }

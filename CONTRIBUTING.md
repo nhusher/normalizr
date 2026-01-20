@@ -13,7 +13,7 @@ Thank you for contributing to Normalizr!
 Before submitting a PR, please ensure:
 
 - [ ] Tests are added or updated for your changes
-- [ ] All tests pass (`npm run test:run`)
+- [ ] All tests pass (`npm test`)
 - [ ] TypeScript compiles without errors (`npm run typecheck`)
 - [ ] Code is formatted consistently (`npm run lint`)
 - [ ] Relevant documentation is updated
@@ -26,16 +26,10 @@ npm install
 
 ## Running Tests
 
-Run tests in watch mode during development:
+Run tests:
 
 ```sh
-npm run test
-```
-
-Run tests once (useful for CI):
-
-```sh
-npm run test:run
+npm test
 ```
 
 Run tests with coverage report:

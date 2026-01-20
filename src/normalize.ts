@@ -121,10 +121,7 @@ export function normalize<S extends Schema>(
 ): NormalizedSchema<AllEntitiesOf<S>, Normalized<S>>;
 
 // Implementation signature
-export function normalize(
-  input: unknown,
-  schema: Schema,
-): NormalizedSchema<EntitiesMap, unknown> {
+export function normalize(input: unknown, schema: Schema): NormalizedSchema<EntitiesMap, unknown> {
   if (!input || typeof input !== 'object') {
     throw new Error(
       `Unexpected input given to normalize. Expected type to be "object", found "${
